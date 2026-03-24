@@ -33,3 +33,4 @@ npm-debug.log*
 # Test cache
 .pytest_cache/
 coverage/
+TODO.txt
