@@ -1,3 +1,8 @@
+# ── Version/Diagnostics Endpoint ─────────────────────────────────────────────
+import subprocess
+import os
+
+
 # Session token helpers for TDD
 from session_token_helpers import create_session_token, validate_session_token, expire_session_token
 # Gomony FastAPI backend
@@ -53,6 +58,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/version")
+async def version_info():
+    try:
+        commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=os.path.dirname(__file__)).decode().strip()
+    except Exception:
+        commit = "unknown"
+    return {
+        "version": "1.0.0",
+        "commit": commit,
+        "status": "ok"
+    }
 
 # ── Board helpers ──────────────────────────────────────────────────────────────
 
@@ -220,6 +238,8 @@ async def reset():
     }
 
 
+from fastapi.responses import JSONResponse
+
 @app.post("/move")
 async def move_endpoint(body: MoveRequest):
     board = _state["board"]
@@ -230,29 +250,29 @@ async def move_endpoint(body: MoveRequest):
 
     start_stack = board[sr][sc]
     if not start_stack:
-        return {"valid": False, "reason": "No stack at start position", "pending_jump": pending}
+        return JSONResponse(status_code=400, content={"error": "No stack at start position", "valid": False, "pending_jump": pending})
     moving_piece = start_stack[-1]
 
     if current_player == 1 and moving_piece not in (1, 3):
-        return {"valid": False, "reason": "It's Player 1's turn. You must move your own piece.", "pending_jump": pending}
+        return JSONResponse(status_code=403, content={"error": "It's Player 1's turn. You must move your own piece.", "valid": False, "pending_jump": pending})
     if current_player == 2 and moving_piece not in (2, 4):
-        return {"valid": False, "reason": "It's Player 2's turn. You must move your own piece.", "pending_jump": pending}
+        return JSONResponse(status_code=403, content={"error": "It's Player 2's turn. You must move your own piece.", "valid": False, "pending_jump": pending})
 
     dr, dc = er - sr, ec - sc
     is_jump = abs(dr) == 2
 
     if pending:
         if [sr, sc] != pending:
-            return {"valid": False, "reason": "You must continue jumping with the highlighted piece.", "pending_jump": pending}
+            return JSONResponse(status_code=400, content={"error": "You must continue jumping with the highlighted piece.", "valid": False, "pending_jump": pending})
         if not is_jump:
-            return {"valid": False, "reason": "You must continue jumping.", "pending_jump": pending}
+            return JSONResponse(status_code=400, content={"error": "You must continue jumping.", "valid": False, "pending_jump": pending})
     else:
         if not is_jump and _get_all_jumps(board, current_player):
-            return {"valid": False, "reason": "A jump is available — you must jump.", "pending_jump": None}
+            return JSONResponse(status_code=400, content={"error": "A jump is available — you must jump.", "valid": False, "pending_jump": None})
 
     valid, reason, kinged = validate_move(board, (sr, sc), (er, ec))
     if not valid:
-        return {"valid": False, "reason": reason, "pending_jump": pending}
+        return JSONResponse(status_code=400, content={"error": reason, "valid": False, "pending_jump": pending})
 
     _apply_move(board, sr, sc, er, ec, kinged)
 
@@ -289,11 +309,9 @@ async def move_pc_endpoint(body: AIMoveRequest = Body(default=None)):
     own = (1, 3) if player == 1 else (2, 4)
     opp = (2, 4) if player == 1 else (1, 3)
     if not any(cell[-1] in own for row in board for cell in row if cell):
-        return {"valid": False, "reason": "Game over: no pieces for current player",
-                "board": board, "current_player": player, "pending_jump": None}
+        return JSONResponse(status_code=410, content={"error": "Game over: no pieces for current player", "valid": False, "board": board, "current_player": player, "pending_jump": None})
     if not any(cell[-1] in opp for row in board for cell in row if cell):
-        return {"valid": False, "reason": "Game over: opponent has no pieces",
-                "board": board, "current_player": player, "pending_jump": None}
+        return JSONResponse(status_code=410, content={"error": "Game over: opponent has no pieces", "valid": False, "board": board, "current_player": player, "pending_jump": None})
 
     moves_made = []
 
@@ -314,8 +332,7 @@ async def move_pc_endpoint(body: AIMoveRequest = Body(default=None)):
             move = choose_ai_move(board, player, depth)
             if not move:
                 if not moves_made:
-                    return {"valid": False, "reason": "No valid moves for AI",
-                            "board": board, "current_player": player, "pending_jump": None}
+                    return JSONResponse(status_code=400, content={"error": "No valid moves for AI", "valid": False, "board": board, "current_player": player, "pending_jump": None})
                 break
             sr, sc = move[0]
             er, ec = move[1]
@@ -323,8 +340,7 @@ async def move_pc_endpoint(body: AIMoveRequest = Body(default=None)):
         valid, reason, kinged = validate_move(board, (sr, sc), (er, ec))
         if not valid:
             if not moves_made:
-                return {"valid": False, "reason": reason,
-                        "board": board, "current_player": player, "pending_jump": None}
+                return JSONResponse(status_code=400, content={"error": reason, "valid": False, "board": board, "current_player": player, "pending_jump": None})
             break
 
         is_jump = abs(er - sr) == 2
@@ -360,6 +376,7 @@ async def create_game():
     game_id = str(uuid.uuid4())[:8]
     session = GameSession(game_id)
     _sessions[game_id] = session
+    logger.info(f"Game created: {game_id}")
     # Always include orientation and color fields for player 1
     d = session.to_dict(player_number=1)
     d["game_id"] = game_id
@@ -383,6 +400,7 @@ async def join_game(body: JoinGameRequest):
             logger.info(f"Join attempt: Game {body.game_id} is full.")
             return JSONResponse(status_code=409, content={"error": "Game is full"})
         token = session.add_player(2)
+        logger.info(f"Player 2 joined game: {body.game_id}")
     # Always include orientation and color fields for player 2
     d = session.to_dict(player_number=2)
     d["game_id"] = body.game_id
@@ -475,6 +493,7 @@ async def game_move(game_id: str, body: SessionMoveRequest):
             return JSONResponse(status_code=400, content={"error": reason})
 
         _apply_move(board, sr, sc, er, ec, kinged)
+        logger.info(f"Move made in game {game_id}: {body.player} {sr},{sc}->{er},{ec}")
 
         if is_jump and not kinged:
             more_jumps = _get_jumps_from(board, (er, ec))
@@ -492,6 +511,7 @@ async def game_move(game_id: str, body: SessionMoveRequest):
         opp = (2, 4) if body.player == 1 else (1, 3)
         if not any(cell[-1] in opp for row in board for cell in row if cell):
             session.completed = True
+            logger.info(f"Game {game_id} completed. Winner: Player {body.player}")
 
         resp = {"valid": True, "reason": reason}
         resp.update(session.to_dict(body.player))

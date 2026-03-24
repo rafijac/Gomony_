@@ -11,7 +11,7 @@ import './App.css';
 
 // AppContent is separated so it can use the GameContext
 function AppContent() {
-  const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, lastMessage, sessionExpired } = useGame();
+  const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, lastMessage, sessionExpired, gameId } = useGame();
   const [showModeModal, setShowModeModal] = React.useState(true);
   const [showLobby, setShowLobby] = React.useState(false);
 
@@ -54,41 +54,45 @@ function AppContent() {
     setShowLobby(false);
   };
 
+  const isPlaying = !showModeModal && !showLobby;
+
   return (
     <div className="app-wrapper">
-      <div className="gomony-banner">
-        <div
-          className="gomony-banner-logo-box"
-          style={{ cursor: 'pointer' }}
-          title="Back to Lobby"
-          onClick={handleGomonyClick}
-          tabIndex={0}
-          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleGomonyClick(); }}
-          role="button"
-          aria-label="Back to Lobby"
-        >
-          <span className="gomony-banner-title">GOMONY<sup className="gomony-copyright-sup">©</sup></span>
-        </div>
-        <div className="gomony-banner-info">
-          <div className="gomony-banner-company">GOMONY</div>
-          <div className="gomony-banner-address">9011 Cliffwood Drive &bull; Houston, Texas 77096</div>
-          <div className="gomony-banner-copyright">COPYRIGHT 1979 &nbsp; Harvey S. Klein &nbsp; Patent Pending</div>
+      <div className="app-top-bar">
+        <div className="gomony-banner gomony-banner--compact">
+          <div
+            className="gomony-banner-logo-box"
+            style={{ cursor: 'pointer' }}
+            title="Back to Lobby"
+            onClick={handleGomonyClick}
+            tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleGomonyClick(); }}
+            role="button"
+            aria-label="Back to Lobby"
+          >
+            <span className="gomony-banner-title">GOMONY<sup className="gomony-copyright-sup">©</sup></span>
+          </div>
         </div>
       </div>
-      {/* Notification for errors and session expiration (REMOVED: now only in sidebar) */}
       {showModeModal && <ModeSelectModal onSelect={handleSelect} showMultiplayer />}
       {showLobby && <LobbyModal onCreate={handleCreate} onJoin={handleJoin} onCancel={handleCancelLobby} />}
-      {/* Show game code if in multiplayer mode and gameId is set */}
-      {!showModeModal && !showLobby && (
+      {isPlaying && (
         <>
           {gameMode === 'MP' && (
-            <div style={{ textAlign: 'center', margin: '1rem 0', color: '#1dbf6a', fontWeight: 600 }}>
-              Share this game code: <span style={{ fontFamily: 'monospace', fontSize: '1.2em' }}>{useGame().gameId}</span>
+            <div style={{ textAlign: 'center', margin: '0.5rem 0', color: '#7a2418', fontWeight: 600 }}>
+              Share this game code: <span style={{ fontFamily: 'monospace', fontSize: '1.2em' }}>{gameId}</span>
             </div>
           )}
           <GameBoard />
         </>
       )}
+      <footer className="app-footer">
+        <span className="app-footer-name">GOMONY</span>
+        <span className="app-footer-sep">&bull;</span>
+        <span>9011 Cliffwood Drive &bull; Houston, Texas 77096</span>
+        <span className="app-footer-sep">&bull;</span>
+        <span>COPYRIGHT 1979 &nbsp; Harvey S. Klein &nbsp; Patent Pending</span>
+      </footer>
     </div>
   );
 }

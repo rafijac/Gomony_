@@ -1,4 +1,7 @@
 save statte of game
+cant deploy
+"Invalid: It's Player 2's turn. You must move your own piece." doesnt make sense
+looks like kings of tall stacks get cut off from top
 
 done
 better code arch

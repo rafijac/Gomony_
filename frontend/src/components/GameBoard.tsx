@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useGame } from './GameContext';
 import Stack from './Stack';
 import { useNavigate } from 'react-router-dom';
+import { postAIMove } from '../aiApi';
 // Animation duration for AI piece movement (ms)
 export const AI_MOVE_ANIMATION_DURATION = 1200;
 
@@ -16,20 +17,24 @@ export default function GameBoard() {
   const {
     board,
     moveStack,
-    triggerAIMove,
     resetGame,
     lastMessage,
     currentPlayer,
     pendingJump,
     gameMode,
     isThinking,
+    setIsThinking,
     orientation,
     playerNumber,
     sessionExpired,
     setSessionExpired,
+    setBoardStateFromAI,
   } = useGame();
   const [selected, setSelected] = useState<{ x: number; y: number } | null>(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
+  // For AI move animation
+  const [aiMoveAnimating, setAIMoveAnimating] = useState(false);
+  const [aiMoveDest, setAIMoveDest] = useState<{ x: number; y: number } | null>(null);
   const navigate = useNavigate ? useNavigate() : (() => {});
 
   // ── Dynamic board sizing ──────────────────────────────────────────────────
@@ -87,7 +92,7 @@ export default function GameBoard() {
   };
 
   const handleCellClick = async (x: number, y: number) => {
-    if (isThinking) return;
+    if (isThinking || aiMoveAnimating) return;
 
     if (selected) {
       if (selected.x === x && selected.y === y) {
@@ -99,10 +104,32 @@ export default function GameBoard() {
       setSelected(null);
       // Trigger AI if it's now player 2's turn, no pending jump, and in PC mode
       if (result?.valid && !result.pendingJump && result.currentPlayer === 2 && gameMode === 'PC') {
-        await triggerAIMove();
+        await animateAIMove();
       }
     } else if (canSelect(x, y)) {
       setSelected({ x, y });
+    }
+  };
+
+  // Animate the AI move: fetch move, update board, then highlight destination
+  const animateAIMove = async () => {
+    setIsThinking(true);
+    try {
+      const aiResult = await postAIMove();
+      // Update board state first so the piece appears at destination
+      if (setBoardStateFromAI) setBoardStateFromAI(aiResult);
+      // Now highlight the destination cell where the piece just landed
+      if (aiResult && aiResult.move) {
+        setAIMoveDest({ x: aiResult.move.end_pos[1], y: aiResult.move.end_pos[0] });
+        setAIMoveAnimating(true);
+        await new Promise(res => setTimeout(res, AI_MOVE_ANIMATION_DURATION));
+        setAIMoveAnimating(false);
+        setAIMoveDest(null);
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setIsThinking(false);
     }
   };
 
@@ -116,14 +143,14 @@ export default function GameBoard() {
   };
 
   const handleDrop = (toX: number, toY: number) => async (e: React.DragEvent) => {
-    if (isThinking) return;
+    if (isThinking || aiMoveAnimating) return;
     const fromX = parseInt(e.dataTransfer.getData('fromX'));
     const fromY = parseInt(e.dataTransfer.getData('fromY'));
     if (!isNaN(fromX) && !isNaN(fromY)) {
       const result = await moveStack({ x: fromX, y: fromY }, { x: toX, y: toY });
       setSelected(null);
       if (result?.valid && !result.pendingJump && result.currentPlayer === 2 && gameMode === 'PC') {
-        await triggerAIMove();
+        await animateAIMove();
       }
     }
   };
@@ -137,8 +164,10 @@ export default function GameBoard() {
   const displayBoard = isFlipped ? [...board].slice().reverse().map(row => [...row].reverse()) : board;
 
   // Helper: is this cell the destination of the last AI move?
-  // (Not implemented: lastMove/isAIMove not in context)
-  const isAIMoveDest = (_x: number, _y: number) => false;
+  const isAIMoveDest = (x: number, y: number) => {
+    if (!aiMoveAnimating || !aiMoveDest) return false;
+    return aiMoveDest.x === x && aiMoveDest.y === y;
+  };
 
   const renderPlayerCard = (p: 1 | 2) => {
     const info = p === 1 ? p1 : p2;
@@ -168,7 +197,7 @@ export default function GameBoard() {
   }, [sessionExpired, setSessionExpired, navigate]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', flex: 1, minHeight: 0, width: '100%', overflow: 'hidden', alignItems: 'stretch' }}>
+    <div style={{ display: 'flex', flexDirection: 'row', flex: 1, minHeight: 0, minWidth: 0, width: '100%', height: '100%', overflow: 'hidden', alignItems: 'stretch' }}>
       {showSessionModal && (
         <div className="session-expired-modal">
           <div className="modal-content">
@@ -198,12 +227,12 @@ export default function GameBoard() {
                     data-row={y}
                     data-col={x}
                     data-animating={animating ? 'true' : undefined}
-                    draggable={stack.length > 0 && !isThinking}
+                    draggable={stack.length > 0 && !isThinking && !aiMoveAnimating}
                     onDragStart={handleDragStart(x, y)}
                     onClick={() => handleCellClick(x, y)}
                     onDragOver={e => e.preventDefault()}
                     onDrop={handleDrop(x, y)}
-                    style={isThinking ? { pointerEvents: 'none', opacity: 0.7 } : {}}
+                    style={isThinking || aiMoveAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
                   >
                     <Stack stack={stack} animating={animating} />
                   </div>

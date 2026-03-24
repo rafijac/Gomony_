@@ -47,6 +47,7 @@ interface GameContextValue {
   yourColor?: string;
   sessionExpired: boolean;
   setSessionExpired: (expired: boolean) => void;
+  setBoardStateFromAI?: (aiResult: { board?: number[][][]; current_player?: number; pending_jump?: [number, number] | null }) => void;
 }
 
 const GameContext = createContext<GameContextValue>({
@@ -91,6 +92,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [board, setBoard] = useState<number[][][]>(initialBoard);
   const [currentPlayer, setCurrentPlayer] = useState(1);
   const [pendingJump, setPendingJump] = useState<[number, number] | null>(null);
+  const didMountReset = React.useRef(false);
+
+  // Set board state from AI response (defined after state so setters are in scope)
+  const setBoardStateFromAI = useCallback((aiResult: { board?: number[][][]; current_player?: number; pending_jump?: [number, number] | null }) => {
+    if (aiResult.board) setBoard(aiResult.board);
+    if (aiResult.current_player != null) setCurrentPlayer(aiResult.current_player);
+    setPendingJump(aiResult.pending_jump ?? null);
+  }, []); 
   const [lastMessage, setLastMessage] = useState('');
   const [gameMode, setGameMode] = useState<'2P' | 'PC' | 'MP'>('2P');
   const [isThinking, setIsThinking] = useState(false);
@@ -126,8 +135,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Optionally: fetch initial board state for this session
   }, []);
 
-  // On mount, reset backend to ensure frontend and backend are in sync
+  // On mount, reset backend to ensure frontend and backend are in sync.
+  // Guard with ref to prevent React StrictMode double-invoke from resetting mid-game.
   useEffect(() => {
+    if (didMountReset.current) return;
+    didMountReset.current = true;
     setSessionToken(null);
     setApiSessionToken(null);
     setPlayerNumber(null);
@@ -300,6 +312,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       yourColor,
       sessionExpired,
       setSessionExpired,
+      setBoardStateFromAI,
     }}>
       {children}
     </GameContext.Provider>
