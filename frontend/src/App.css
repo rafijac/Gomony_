@@ -5,63 +5,85 @@
   padding: 16px 24px 8px;
   height: 100svh;
   overflow: hidden;
-  background: #2a1608;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(60, 35, 15, 0.5) 0%, transparent 70%),
+    #2a1608;
   box-sizing: border-box;
+  position: relative;
 }
 
 /* ─── GOMONY Logo Banner (matches real box label) ─────────────── */
 .gomony-banner {
   display: flex;
-  align-items: stretch;
-  background: #ede8d8;
-  border: 4px solid #111;
-  border-radius: 6px;
-  margin-bottom: 26px;
-  width: 100%;
-  max-width: 620px;
-  box-shadow: 0 4px 22px rgba(0, 0, 0, 0.65);
+  align-items: center;
+  background: rgba(20, 10, 4, 0.85);
+  border: 2px solid rgba(200, 170, 110, 0.35);
+  border-radius: 8px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
   overflow: hidden;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  gap: 0;
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.2s;
+  animation: banner-fade-in 0.6s ease-out;
+}
+
+.gomony-banner:hover {
+  border-color: rgba(212, 185, 120, 0.6);
+  box-shadow: 0 2px 24px rgba(212, 185, 120, 0.2), 0 2px 16px rgba(0, 0, 0, 0.5);
+  transform: scale(1.02);
+}
+
+@keyframes banner-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Left section: the logo box */
 .gomony-banner-logo-box {
-  /* Inset thick border matching the real label's inner rectangle */
-  margin: 10px 0 10px 10px;
-  border: 5px solid #111;
-  border-radius: 6px;
-  padding: 8px 22px 8px 18px;
+  margin: 6px 0 6px 8px;
+  border: 2px solid rgba(200, 170, 110, 0.5);
+  border-radius: 4px;
+  padding: 4px 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: #ede8d8;
-  /* Double-border illusion: outer shadow line */
-  box-shadow: inset 0 0 0 1.5px #ede8d8, 0 0 0 1px #111;
+  background: rgba(30, 18, 8, 0.7);
 }
 
 .gomony-banner-title {
   font-family: 'Impact', 'Arial Narrow', 'Franklin Gothic Heavy', sans-serif;
-  font-size: 3.1rem;
+  font-size: 1.5rem;
   font-weight: 900;
-  color: #0f0d0a;
-  letter-spacing: 0.01em;
+  color: #d4b978;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   line-height: 1;
-  /* Bevel/3D depth matching the real embossed letters */
   text-shadow:
-    1px 1px 0 #fff,
-    2px 2px 0 rgba(0,0,0,0.35),
-    3px 3px 4px rgba(0,0,0,0.25);
-  -webkit-text-stroke: 1px #0f0d0a;
+    0 1px 4px rgba(0,0,0,0.6),
+    0 0 12px rgba(210, 180, 110, 0.15);
+  -webkit-text-stroke: 0;
 }
 
 .gomony-copyright-sup {
-  font-size: 1rem;
+  font-size: 0.6rem;
   vertical-align: super;
   font-family: serif;
   font-weight: 400;
   -webkit-text-stroke: 0px;
   text-shadow: none;
+  color: #b89d60;
 }
 
 /* Right section: address & copyright, right-aligned like the real label */
@@ -69,32 +91,33 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 3px;
-  padding: 12px 16px 12px 18px;
+  gap: 1px;
+  padding: 6px 10px 6px 8px;
   text-align: right;
   margin-left: auto;
+  border-left: 1px solid rgba(200, 170, 110, 0.2);
 }
 
 .gomony-banner-company {
-  font-size: 0.78rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  color: #0f0d0a;
+  color: #d4b978;
   letter-spacing: 0.04em;
   font-family: 'Arial', sans-serif;
   margin-bottom: 1px;
 }
 
 .gomony-banner-address {
-  font-size: 0.70rem;
-  color: #0f0d0a;
+  font-size: 0.52rem;
+  color: rgba(200, 170, 110, 0.7);
   font-family: 'Arial', sans-serif;
 }
 
 .gomony-banner-copyright {
-  font-size: 0.66rem;
-  color: #0f0d0a;
+  font-size: 0.48rem;
+  color: rgba(200, 170, 110, 0.5);
   font-family: 'Arial', sans-serif;
-  margin-top: 6px;
+  margin-top: 2px;
 }
 
 .counter {

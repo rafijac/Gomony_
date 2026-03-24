@@ -5,11 +5,13 @@ import GameBoard from './components/GameBoard';
 import ModeSelectModal from './components/ModeSelectModal';
 import { setSessionToken } from './api';
 import LobbyModal from './components/LobbyModal';
+import Notification from './components/Notification';
+import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 
 // AppContent is separated so it can use the GameContext
 function AppContent() {
-  const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame } = useGame();
+  const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, lastMessage, sessionExpired } = useGame();
   const [showModeModal, setShowModeModal] = React.useState(true);
   const [showLobby, setShowLobby] = React.useState(false);
 
@@ -73,6 +75,10 @@ function AppContent() {
           <div className="gomony-banner-copyright">COPYRIGHT 1979 &nbsp; Harvey S. Klein &nbsp; Patent Pending</div>
         </div>
       </div>
+      {/* Notification for errors and session expiration */}
+      {(lastMessage || sessionExpired) && (
+        <Notification message={lastMessage || 'Session expired or not found.'} type="error" />
+      )}
       {showModeModal && <ModeSelectModal onSelect={handleSelect} showMultiplayer />}
       {showLobby && <LobbyModal onCreate={handleCreate} onJoin={handleJoin} onCancel={handleCancelLobby} />}
       {/* Show game code if in multiplayer mode and gameId is set */}
@@ -93,7 +99,9 @@ function AppContent() {
 export default function App() {
   return (
     <GameProvider>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
     </GameProvider>
   );
 }

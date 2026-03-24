@@ -1,6 +1,7 @@
 save statte of game
 
 done
+better code arch
 ai mode peices are moving autoamtic without a slow transition making it a poor ux. i want it to feel more real
 in first move the screen jumps afte rmaking it. doesnt happen again
 the balck ont he bottom of the brown squur looks ridiculous

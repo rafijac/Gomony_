@@ -28,7 +28,7 @@ export default function Stack({ stack, animating }: StackProps) {
         const isKing = piece === 3 || piece === 4;
 
         // Non-king  → top face shows identity color, bottom accent peeks out
-        // King      → flipped: king/accent color on top, identity on bottom
+        // King      → flipped: accent color on top, identity on bottom
         let topColor: string, bottomColor: string;
         if (piece === 1) {
           topColor = pieceColors[1]; bottomColor = pieceColors[3]; // white / green

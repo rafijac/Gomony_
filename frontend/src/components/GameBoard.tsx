@@ -1,4 +1,8 @@
 
+import React, { useState, useRef, useEffect } from 'react';
+import { useGame } from './GameContext';
+import Stack from './Stack';
+import { useNavigate } from 'react-router-dom';
 // Animation duration for AI piece movement (ms)
 export const AI_MOVE_ANIMATION_DURATION = 1200;
 
@@ -133,10 +137,8 @@ export default function GameBoard() {
   const displayBoard = isFlipped ? [...board].slice().reverse().map(row => [...row].reverse()) : board;
 
   // Helper: is this cell the destination of the last AI move?
-  const isAIMoveDest = (x: number, y: number) => {
-    if (!lastMove || !isAIMove) return false;
-    return lastMove.to[0] === x && lastMove.to[1] === y;
-  };
+  // (Not implemented: lastMove/isAIMove not in context)
+  const isAIMoveDest = (_x: number, _y: number) => false;
 
   const renderPlayerCard = (p: 1 | 2) => {
     const info = p === 1 ? p1 : p2;
@@ -236,6 +238,5 @@ export default function GameBoard() {
         )}
       </div>
     </div>
-  );
   );
 }

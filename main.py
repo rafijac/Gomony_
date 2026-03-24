@@ -1,3 +1,5 @@
+# Session token helpers for TDD
+from session_token_helpers import create_session_token, validate_session_token, expire_session_token
 # Gomony FastAPI backend
 #
 # Endpoints:
@@ -12,14 +14,25 @@
 #   POST /game/{game_id}/move
 #   POST /game/cleanup     - Remove abandoned/completed sessions
 
+
 import copy
 import secrets
 import uuid
 import threading
+import logging
 from typing import Dict, List, Optional
+
 
 from dotenv import load_dotenv
 load_dotenv()
+
+# ── Diagnostics/Logging Setup ────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger("gomony")
 
 from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -120,13 +133,13 @@ class GameSession:
         self.completed = False
         self.lock = threading.Lock()
         # Session tokens: {player_number: token}
-        self.session_tokens: Dict[int, str] = {1: secrets.token_hex(16)}
+        self.session_tokens: Dict[int, str] = {1: create_session_token()}
         # Orientation: player 1 sees board "south" (their pieces at bottom)
         self.orientations: Dict[int, str] = {1: "south"}
 
     def add_player(self, player_number: int) -> str:
         self.players.append(player_number)
-        token = secrets.token_hex(16)
+        token = create_session_token()
         self.session_tokens[player_number] = token
         self.orientations[player_number] = "north" if player_number == 2 else "south"
         return token
@@ -329,14 +342,16 @@ async def move_pc_endpoint(body: AIMoveRequest = Body(default=None)):
         _state["move_count"] += 1
         break
 
-    return {
+    response = {
         "valid": True,
         "reason": "AI moved",
         "moves": moves_made,
         "board": _state["board"],
         "current_player": _state["current_player"],
         "pending_jump": _state.get("pending_jump"),
+        "move": moves_made[0] if moves_made else None,
     }
+    return response
 
 # ── Multiplayer endpoints ──────────────────────────────────────────────────────
 
@@ -345,66 +360,82 @@ async def create_game():
     game_id = str(uuid.uuid4())[:8]
     session = GameSession(game_id)
     _sessions[game_id] = session
-    return {
-        "game_id": game_id,
-        "player": 1,
-        "player_number": 1,
-        "session_token": session.session_tokens[1],
-        "orientation": session.orientations[1],
-    }
+    # Always include orientation and color fields for player 1
+    d = session.to_dict(player_number=1)
+    d["game_id"] = game_id
+    d["player"] = 1
+    d["player_number"] = 1
+    d["session_token"] = session.session_tokens[1]
+    return d
 
 
 @app.post("/game/join")
 async def join_game(body: JoinGameRequest):
     session = _sessions.get(body.game_id)
     if not session:
+        logger.warning(f"Join attempt failed: Game {body.game_id} not found.")
         return JSONResponse(status_code=404, content={"error": "Game not found"})
     with session.lock:
         if session.completed:
+            logger.info(f"Join attempt: Game {body.game_id} is completed or abandoned.")
             return JSONResponse(status_code=410, content={"error": "Game is completed or abandoned"})
         if len(session.players) >= 2:
+            logger.info(f"Join attempt: Game {body.game_id} is full.")
             return JSONResponse(status_code=409, content={"error": "Game is full"})
         token = session.add_player(2)
-    return {
-        "game_id": body.game_id,
-        "player": 2,
-        "player_number": 2,
-        "session_token": token,
-        "orientation": session.orientations[2],
-    }
+    # Always include orientation and color fields for player 2
+    d = session.to_dict(player_number=2)
+    d["game_id"] = body.game_id
+    d["player"] = 2
+    d["player_number"] = 2
+    d["session_token"] = token
+    return d
 
 
 @app.get("/game/{game_id}/state")
 async def game_state(game_id: str):
     session = _sessions.get(game_id)
     if not session:
+        logger.warning(f"Game state fetch failed: Game {game_id} not found.")
         return JSONResponse(status_code=404, content={"error": "Game not found"})
     # Try to infer player_number from query param or session (not available in GET)
     # For now, just return state for player 1 if joined, else no player context
     player_number = 1 if 1 in session.players else None
-    return session.to_dict(player_number=player_number)
+    d = session.to_dict(player_number=player_number)
+    return d
 
 
 @app.post("/game/{game_id}/move")
 async def game_move(game_id: str, body: SessionMoveRequest):
     session = _sessions.get(game_id)
     if not session:
+        logger.warning(f"Move attempt failed: Game {game_id} not found.")
         return JSONResponse(status_code=404, content={"error": "Game not found"})
     with session.lock:
         if session.completed:
+            logger.info(f"Move attempt: Game {game_id} is over.")
             return JSONResponse(status_code=410, content={"error": "Game is over"})
         # Validate session token
         if not body.session_token:
+            logger.warning(f"Move attempt: Session token required for game {game_id}.")
             return JSONResponse(status_code=401, content={"error": "Session token required"})
+        # Check for expiration using validate_session_token
+        if not validate_session_token(body.session_token):
+            logger.warning(f"Move attempt: Expired session token for game {game_id}.")
+            return JSONResponse(status_code=401, content={"error": "Session token expired"})
         token_player = session.get_player_by_token(body.session_token)
         if token_player is None:
+            logger.warning(f"Move attempt: Invalid session token for game {game_id}.")
             return JSONResponse(status_code=401, content={"error": "Invalid session token"})
         if token_player != body.player:
+            logger.warning(f"Move attempt: Token does not match player for game {game_id}.")
             return JSONResponse(status_code=401, content={"error": "Token does not match player"})
         # Check if both players have joined
         if len(session.players) < 2:
+            logger.info(f"Move attempt: Waiting for another player to join in game {game_id}.")
             return JSONResponse(status_code=403, content={"error": "Waiting for another player to join."})
         if body.player != session.current_player:
+            logger.info(f"Move attempt: Not your turn in game {game_id}.")
             return JSONResponse(status_code=403, content={"error": "Not your turn"})
 
         board = session.board
@@ -413,11 +444,13 @@ async def game_move(game_id: str, body: SessionMoveRequest):
 
         start_stack = board[sr][sc]
         if not start_stack:
+            logger.info(f"Move attempt: No stack at start position in game {game_id}.")
             return JSONResponse(status_code=400, content={"error": "No stack at start position"})
         moving_piece = start_stack[-1]
 
         own = (1, 3) if body.player == 1 else (2, 4)
         if moving_piece not in own:
+            logger.info(f"Move attempt: You must move your own piece in game {game_id}.")
             return JSONResponse(status_code=400, content={"error": "You must move your own piece."})
 
         dr, dc = er - sr, ec - sc
@@ -426,15 +459,19 @@ async def game_move(game_id: str, body: SessionMoveRequest):
 
         if pending:
             if [sr, sc] != pending:
+                logger.info(f"Move attempt: Must continue jumping with highlighted piece in game {game_id}.")
                 return JSONResponse(status_code=400, content={"error": "You must continue jumping with the highlighted piece."})
             if not is_jump:
+                logger.info(f"Move attempt: Must continue jumping in game {game_id}.")
                 return JSONResponse(status_code=400, content={"error": "You must continue jumping."})
         else:
             if not is_jump and _get_all_jumps(board, body.player):
+                logger.info(f"Move attempt: Jump available, must jump in game {game_id}.")
                 return JSONResponse(status_code=400, content={"error": "A jump is available — you must jump."})
 
         valid, reason, kinged = validate_move(board, (sr, sc), (er, ec))
         if not valid:
+            logger.info(f"Move attempt: Invalid move in game {game_id}: {reason}")
             return JSONResponse(status_code=400, content={"error": reason})
 
         _apply_move(board, sr, sc, er, ec, kinged)
@@ -465,73 +502,14 @@ async def game_move(game_id: str, body: SessionMoveRequest):
 async def game_cleanup():
     to_remove = [gid for gid, s in _sessions.items() if s.completed]
     for gid in to_remove:
+        logger.info(f"Session cleanup: Removing completed/abandoned game {gid}")
         del _sessions[gid]
+    logger.info(f"Session cleanup: {len(to_remove)} sessions removed.")
     return {"removed": len(to_remove)}
 
 # ── PC vs PC game runner (used by tests) ──────────────────────────────────────
 
-def run_pc_vs_pc_game(depth=1, max_moves=100):
-    board = make_initial_board()
-    current_player = 1
-    move_count = 0
-    log = []
-    winner = None
-    result = None
-    for i in range(max_moves):
-        move = choose_ai_move(board, current_player, depth=depth)
-        if not move:
-            player_pieces = [cell[-1] for row in board for cell in row if cell and ((current_player == 1 and cell[-1] in (1,3)) or (current_player == 2 and cell[-1] in (2,4)))]
-            opponent_pieces = [cell[-1] for row in board for cell in row if cell and ((current_player == 1 and cell[-1] in (2,4)) or (current_player == 2 and cell[-1] in (1,3)))]
-            if not player_pieces:
-                winner = 2 if current_player == 1 else 1
-                result = "Game over: no pieces for player {}".format(current_player)
-            elif not opponent_pieces:
-                winner = current_player
-                result = "Game over: opponent has no pieces"
-            else:
-                winner = 2 if current_player == 1 else 1
-                result = "No valid moves for player {}".format(current_player)
-            break
-        sr, sc = move[0]
-        er, ec = move[1]
-        valid, reason, kinged = validate_move(board, (sr, sc), (er, ec))
-        if not valid:
-            result = f"Invalid move by AI: {move} | Reason: {reason}"
-            winner = 2 if current_player == 1 else 1
-            break
-        _apply_move(board, sr, sc, er, ec, kinged)
-        log.append({
-            "move_num": move_count + 1,
-            "player": current_player,
-            "move": {"start_pos": [sr, sc], "end_pos": [er, ec]},
-            "reason": reason,
-            "board": copy.deepcopy(board),
-        })
-        move_count += 1
-        opponent_pieces = [cell[-1] for row in board for cell in row if cell and ((current_player == 1 and cell[-1] in (2,4)) or (current_player == 2 and cell[-1] in (1,3)))]
-        if not opponent_pieces:
-            winner = current_player
-            result = "Game over: opponent has no pieces"
-            break
-        back_row = 11 if current_player == 1 else 0
-        for col in range(12):
-            stack = board[back_row][col]
-            if stack and stack[-1] in ((1,3) if current_player == 1 else (2,4)) and len(stack) >= 3:
-                winner = current_player
-                result = f"Game over: player {current_player} stack of 3+ reached back row"
-                break
-        if result:
-            break
-        current_player = 2 if current_player == 1 else 1
-    if not result:
-        result = "Max moves reached"
-    return {
-        "log": log,
-        "result": result,
-        "winner": winner,
-        "final_board": board,
-        "move_count": move_count,
-    }
+
 
 if __name__ == "__main__":
     import uvicorn
