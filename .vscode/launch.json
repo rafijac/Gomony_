@@ -1,0 +1,30 @@
+{
+    // See https://go.microsoft.com/fwlink/?linkid=830387 for more about launch configurations
+    "version": "0.2.0",
+    "compounds": [
+        {
+            "name": "Run Full App",
+            "configurations": ["Python: Run Backend", "Vite: Run Frontend"]
+        }
+    ],
+    "configurations": [
+        {
+            "name": "Python: Run Backend",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Vite: Run Frontend",
+            "type": "pwa-node",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/frontend",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"],
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**"]
+        }
+    ]
+}

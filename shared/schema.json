@@ -1,0 +1,65 @@
+// schema.json
+// Gomony GameState and API schema
+{
+  "board": {
+    "type": "array",
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "description": "Player ID, bottom to top of stack"
+        },
+        "description": "Stack of Player IDs, bottom to top"
+      },
+      "description": "Row of stacks"
+    },
+    "description": "12x12 board, each cell is a stack (array of Player IDs)"
+  },
+  "currentPlayer": {
+    "type": "integer",
+    "description": "Player ID whose turn it is"
+  },
+  "moveHistory": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "from": {"type": "array", "items": {"type": "integer"}, "description": "[row, col]"},
+        "to": {"type": "array", "items": {"type": "integer"}, "description": "[row, col]"},
+        "stackBefore": {"type": "array", "items": {"type": "integer"}},
+        "stackAfter": {"type": "array", "items": {"type": "integer"}}
+      }
+    },
+    "description": "History of moves"
+  },
+  "player_number": {
+    "type": "integer",
+    "description": "The player number for this client (1 or 2)"
+  },
+  "orientation": {
+    "type": "string",
+    "description": "Board orientation for this player ('north' or 'south')"
+  },
+  "your_color": {
+    "type": "string",
+    "description": "The color assigned to this player ('white' or 'brown')"
+  },
+  "current_turn_color": {
+    "type": "string",
+    "description": "The color whose turn it is ('white' or 'brown')"
+  },
+  "starting_color": {
+    "type": "string",
+    "description": "The color that always starts the game ('white')"
+  },
+  "session_token": {
+    "type": "string",
+    "description": "Unique session token (UUID) for this player, required for all move requests."
+  },
+  "API_notes": {
+    "type": "string",
+    "description": "All /game/create and /game/join responses include session_token, player_number, orientation, and your_color. All /game/{game_id}/move and /game/{game_id}/state responses include current_turn_color, starting_color, orientation, and your_color. Unauthorized or invalid requests return 401/403/410 with an error message. Session tokens are valid for the game duration. No spectator support."
+  }
+}

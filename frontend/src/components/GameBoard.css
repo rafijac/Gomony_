@@ -1,0 +1,302 @@
+/* ─── AI move animation ─────────────────────────────────────────────── */
+.ai-animating {
+  transition: transform var(--ai-move-anim-duration, 1.2s) cubic-bezier(0.22, 1, 0.36, 1),
+              filter var(--ai-move-anim-duration, 1.2s) cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, filter;
+  z-index: 10;
+}
+
+/* Set the CSS variable for animation duration on the board root or globally */
+.game-board, .ai-animating {
+  --ai-move-anim-duration: 1.2s;
+}
+/* ─── PC thinking indicator ─────────────────────────────────────────────── */
+.pc-thinking-indicator {
+  margin: 16px 0 0 0;
+  font-size: 1.2em;
+  color: #1dbf6a;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 8px #000a;
+  animation: pc-thinking-blink 1.2s infinite;
+}
+
+@keyframes pc-thinking-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+/* ─── Board wrapper & perspective ─────────────────────────────── */
+.board-perspective-wrapper {
+  perspective: 1100px;
+  perspective-origin: 50% 0%;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.game-board {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(12, 1fr);
+  gap: 0;
+  /* width & height set dynamically via inline style from GameBoard.tsx */
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  padding: 0;
+  background: #2a1608;
+  /* Elegant frame: deep brown/black with gold accent bottom */
+  border: 10px solid #3a2412;
+  border-bottom: 26px solid #d1b06b;
+  border-radius: 4px 4px 2px 2px;
+  transform: rotateX(42deg);
+  transform-origin: top center;
+  box-shadow:
+    0 0 0 2px #6e4b1b,
+    0 0 0 5px #1a0e05,
+    0 50px 90px rgba(0, 0, 0, 0.98),
+    0 0 140px rgba(0, 0, 0, 0.6);
+}
+/* ─── Player HUD bar above board ─────────────────────────────── */
+.player-hud-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 18px;
+  width: 100%;
+  max-width: 900px;
+}
+
+/* ─── Board cells ──────────────────────────────────────────────── */
+.cell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  transition: filter 0.12s;
+  box-sizing: border-box;
+  overflow: visible;
+  min-width: 0;
+  min-height: 0;
+}
+
+.cell[data-light="true"] {
+  background: #ede2c8;
+}
+
+
+.cell[data-light="false"] {
+  background: linear-gradient(to bottom, #a05a1c 0%, #8b3e14 70%, #5a2d0c 100%);
+}
+
+.cell:hover {
+  filter: brightness(1.22);
+}
+
+.cell.selected {
+  outline: 3px solid #ffd700;
+  outline-offset: -3px;
+  filter: brightness(1.1);
+}
+
+.cell.pending-jump {
+  outline: 3px solid #f0a500;
+  outline-offset: -3px;
+  animation: pending-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes pending-pulse {
+  from { filter: brightness(1.0); }
+  to   { filter: brightness(1.35); }
+}
+
+/* ─── Stack container ──────────────────────────────────────────── */
+.stack {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ─── Disc base (shared) ───────────────────────────────────────── */
+.disc {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.15s;
+}
+
+/* ─── Top disc (face-up color) ─────────────────────────────────── */
+.disc-top {
+  width: 82%;
+  background:
+    radial-gradient(ellipse at 30% 25%, rgba(255, 255, 255, 0.68) 0%, transparent 52%),
+    radial-gradient(ellipse at 65% 72%, rgba(0, 0, 0, 0.20) 0%, transparent 46%),
+    var(--disc-color, #888);
+  box-shadow:
+    0 0 0 1.5px rgba(0, 0, 0, 0.50),
+    inset 0 -5px 10px rgba(0, 0, 0, 0.42),
+    inset 0 3px 7px rgba(255, 255, 255, 0.26),
+    0 5px 0 rgba(0, 0, 0, 0.52),
+    0 9px 18px rgba(0, 0, 0, 0.62);
+}
+
+/* ─── Bottom disc (accent color, peeking out wider & lower) ────── */
+.disc-bottom {
+  width: 96%;
+  background:
+    radial-gradient(ellipse at 34% 26%, rgba(255, 255, 255, 0.24) 0%, transparent 50%),
+    var(--disc-color, #555);
+  filter: brightness(0.82);
+  box-shadow:
+    0 0 0 1.5px rgba(0, 0, 0, 0.55),
+    inset 0 -4px 7px rgba(0, 0, 0, 0.50),
+    0 4px 0 rgba(0, 0, 0, 0.55),
+    0 7px 12px rgba(0, 0, 0, 0.65);
+}
+
+/* ─── King ring on the top disc ───────────────────────────────── */
+.disc-top.king {
+  outline: 3px solid #ffd700;
+  outline-offset: -3px;
+  box-shadow:
+    0 0 0 3px #ffd700,
+    0 0 0 5px rgba(0, 0, 0, 0.45),
+    inset 0 -5px 10px rgba(0, 0, 0, 0.42),
+    inset 0 3px 7px rgba(255, 255, 255, 0.26),
+    0 5px 0 rgba(0, 0, 0, 0.52),
+    0 9px 18px rgba(0, 0, 0, 0.62);
+}
+
+/* ─── Crown icon ─────────────────────────────────────────────── */
+.king-crown {
+  font-size: 1.1em;
+  line-height: 1;
+  color: #ffd700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ─── Player sidebar panels ──────────────────────────────────── */
+.player-sidebar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 130px;
+  flex-shrink: 0;
+  padding: 8px 0;
+}
+
+.restart-btn {
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #2a2a2a;
+  color: #eee;
+  width: 100%;
+  transition: background 0.15s;
+}
+.restart-btn:hover:not(:disabled) {
+  background: #3a3a3a;
+}
+.restart-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Player HUD ─────────────────────────────────────────────── */
+.player-hud {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.player-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  min-width: 130px;
+}
+
+.player-card.active {
+  background: rgba(255, 215, 0, 0.08);
+  border-color: #ffd700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.18);
+}
+
+.player-card-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #aaa;
+}
+
+.player-card.active .player-card-label {
+  color: #ffd700;
+}
+
+.player-swatch {
+  display: flex;
+  flex-direction: column;
+  width: 42px;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.player-swatch-top {
+  flex: 1;
+}
+
+.player-swatch-bottom {
+  flex: 1;
+}
+
+.player-card-turn {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.12);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.hud-vs {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.1em;
+}
+
+/* ─── Status message ─────────────────────────────────────────── */
+.status-message {
+  padding: 8px 20px;
+  background: rgba(255, 215, 0, 0.08);
+  color: #e0c97a;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 8px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
