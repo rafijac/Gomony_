@@ -75,10 +75,7 @@ function AppContent() {
           <div className="gomony-banner-copyright">COPYRIGHT 1979 &nbsp; Harvey S. Klein &nbsp; Patent Pending</div>
         </div>
       </div>
-      {/* Notification for errors and session expiration */}
-      {(lastMessage || sessionExpired) && (
-        <Notification message={lastMessage || 'Session expired or not found.'} type="error" />
-      )}
+      {/* Notification for errors and session expiration (REMOVED: now only in sidebar) */}
       {showModeModal && <ModeSelectModal onSelect={handleSelect} showMultiplayer />}
       {showLobby && <LobbyModal onCreate={handleCreate} onJoin={handleJoin} onCancel={handleCancelLobby} />}
       {/* Show game code if in multiplayer mode and gameId is set */}
