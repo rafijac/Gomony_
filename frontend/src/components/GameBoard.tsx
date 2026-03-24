@@ -1,11 +1,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import FlyingPieceOverlay from './FlyingPieceOverlay';
 import { useGame } from './GameContext';
 import Stack from './Stack';
 import { useNavigate } from 'react-router-dom';
 import { postAIMove } from '../aiApi';
 // Animation duration for AI piece movement (ms)
-export const AI_MOVE_ANIMATION_DURATION = 1200;
+export const AI_MOVE_ANIMATION_DURATION = 1400;
+//
 
 import './GameBoard.css';
 
@@ -13,7 +15,8 @@ import './GameBoard.css';
 /**
  * GameBoard handles board rendering, user moves, and PC mode AI integration.
  */
-export default function GameBoard() {
+// Accept Tooltip as prop for onboarding
+export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<any> } = {}) {
   const {
     board,
     moveStack,
@@ -35,6 +38,8 @@ export default function GameBoard() {
   // For AI move animation
   const [aiMoveAnimating, setAIMoveAnimating] = useState(false);
   const [aiMoveDest, setAIMoveDest] = useState<{ x: number; y: number } | null>(null);
+  const [aiMoveSrc, setAIMoveSrc] = useState<{ x: number; y: number } | null>(null);
+  const [flyingPiece, setFlyingPiece] = useState<{ piece: number, from: {x: number, y: number}, to: {x: number, y: number} } | null>(null);
   const navigate = useNavigate ? useNavigate() : (() => {});
 
   // ── Dynamic board sizing ──────────────────────────────────────────────────
@@ -116,15 +121,27 @@ export default function GameBoard() {
     setIsThinking(true);
     try {
       const aiResult = await postAIMove();
-      // Update board state first so the piece appears at destination
-      if (setBoardStateFromAI) setBoardStateFromAI(aiResult);
-      // Now highlight the destination cell where the piece just landed
       if (aiResult && aiResult.move) {
-        setAIMoveDest({ x: aiResult.move.end_pos[1], y: aiResult.move.end_pos[0] });
+        // Save src/dest for flying piece
+        const from = { x: aiResult.move.start_pos[1], y: aiResult.move.start_pos[0] };
+        const to = { x: aiResult.move.end_pos[1], y: aiResult.move.end_pos[0] };
+        setAIMoveSrc(from);
+        setAIMoveDest(to);
         setAIMoveAnimating(true);
+        // Get the moving piece (top of src stack)
+        const movingPiece = board[from.y][from.x][board[from.y][from.x].length - 1];
+        setFlyingPiece({ piece: movingPiece, from, to });
+        // Wait for animation
         await new Promise(res => setTimeout(res, AI_MOVE_ANIMATION_DURATION));
+        setFlyingPiece(null);
         setAIMoveAnimating(false);
         setAIMoveDest(null);
+        setAIMoveSrc(null);
+        // Now update board state
+        if (setBoardStateFromAI) setBoardStateFromAI(aiResult);
+      } else {
+        // fallback: just update board
+        if (setBoardStateFromAI) setBoardStateFromAI(aiResult);
       }
     } catch {
       // silent fail
@@ -168,6 +185,8 @@ export default function GameBoard() {
     if (!aiMoveAnimating || !aiMoveDest) return false;
     return aiMoveDest.x === x && aiMoveDest.y === y;
   };
+  // Helper: is this cell the source of the last AI move?
+  //
 
   const renderPlayerCard = (p: 1 | 2) => {
     const info = p === 1 ? p1 : p2;
@@ -211,49 +230,151 @@ export default function GameBoard() {
         ref={boardAreaRef}
         style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden' }}
       >
-        <div className="board-perspective-wrapper">
-          <div className="game-board" style={{ width: boardPx, height: boardPx }}>
-            {displayBoard.map((row, yIdx) =>
-              row.map((stack, x) => {
-                const y = isFlipped ? 11 - yIdx : yIdx;
-                const isSelected = selected?.x === x && selected?.y === y;
-                const isPending = isPendingCell(x, y);
-                const animating = isAIMoveDest(x, y);
-                return (
-                  <div
-                    key={`${x}-${y}`}
-                    className={`cell${isSelected ? ' selected' : ''}${isPending ? ' pending-jump' : ''}${animating ? ' ai-animating' : ''}`}
-                    data-light={(x + y) % 2 === 0 ? 'true' : 'false'}
-                    data-row={y}
-                    data-col={x}
-                    data-animating={animating ? 'true' : undefined}
-                    draggable={stack.length > 0 && !isThinking && !aiMoveAnimating}
-                    onDragStart={handleDragStart(x, y)}
-                    onClick={() => handleCellClick(x, y)}
-                    onDragOver={e => e.preventDefault()}
-                    onDrop={handleDrop(x, y)}
-                    style={isThinking || aiMoveAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
-                  >
-                    <Stack stack={stack} animating={animating} />
-                  </div>
-                );
-              })
-            )}
+        {Tooltip ? (
+          <Tooltip content={"The board: Only dark squares are playable. Move your stack by clicking or dragging. Kings can move in all directions."} ariaLabel="game board">
+            <div className="board-perspective-wrapper">
+              <div className="game-board" style={{ width: boardPx, height: boardPx }}>
+                {displayBoard.map((row, yIdx) =>
+                  row.map((stack, x) => {
+                    const y = isFlipped ? 11 - yIdx : yIdx;
+                    const isSelected = selected?.x === x && selected?.y === y;
+                    const isPending = isPendingCell(x, y);
+                    const animating = isAIMoveDest(x, y);
+                    return (
+                      Tooltip ? (
+                        <Tooltip key={`${x}-${y}`}
+                          content={
+                            stack.length > 0
+                              ? isPending
+                                ? 'This stack must jump again!'
+                                : 'Click or drag to move this stack.'
+                              : 'Empty square. Only dark squares are playable.'
+                          }
+                          ariaLabel={stack.length > 0 ? 'stack' : 'empty square'}
+                        >
+                          <div
+                            className={`cell${isSelected ? ' selected' : ''}${isPending ? ' pending-jump' : ''}${animating ? ' ai-animating' : ''}`}
+                            data-light={(x + y) % 2 === 0 ? 'true' : 'false'}
+                            data-row={y}
+                            data-col={x}
+                            data-animating={animating ? 'true' : undefined}
+                            draggable={stack.length > 0 && !isThinking && !aiMoveAnimating}
+                            onDragStart={handleDragStart(x, y)}
+                            onClick={() => handleCellClick(x, y)}
+                            onDragOver={e => e.preventDefault()}
+                            onDrop={handleDrop(x, y)}
+                            style={isThinking || aiMoveAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
+                          >
+                            <Stack stack={stack} animating={animating} />
+                          </div>
+                        </Tooltip>
+                      ) : (
+                        <div
+                          key={`${x}-${y}`}
+                          className={`cell${isSelected ? ' selected' : ''}${isPending ? ' pending-jump' : ''}${animating ? ' ai-animating' : ''}`}
+                          data-light={(x + y) % 2 === 0 ? 'true' : 'false'}
+                          data-row={y}
+                          data-col={x}
+                          data-animating={animating ? 'true' : undefined}
+                          draggable={stack.length > 0 && !isThinking && !aiMoveAnimating}
+                          onDragStart={handleDragStart(x, y)}
+                          onClick={() => handleCellClick(x, y)}
+                          onDragOver={e => e.preventDefault()}
+                          onDrop={handleDrop(x, y)}
+                          style={isThinking || aiMoveAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
+                        >
+                          <Stack stack={stack} animating={animating} />
+                        </div>
+                      )
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </Tooltip>
+        ) : (
+          <div className="board-perspective-wrapper">
+            <div className="game-board" style={{ width: boardPx, height: boardPx }}>
+              {displayBoard.map((row, yIdx) =>
+                row.map((stack, x) => {
+                  const y = isFlipped ? 11 - yIdx : yIdx;
+                  const isSelected = selected?.x === x && selected?.y === y;
+                  const isPending = isPendingCell(x, y);
+                  const animating = isAIMoveDest(x, y);
+                  // Hide top piece in src/dest during flying animation
+                  let stackToShow = stack;
+                  if (aiMoveAnimating && flyingPiece) {
+                    if ((flyingPiece.from.x === x && flyingPiece.from.y === y) || (flyingPiece.to.x === x && flyingPiece.to.y === y)) {
+                      stackToShow = stack.slice(0, -1);
+                    }
+                  }
+                  return (
+                    <div
+                      key={`${x}-${y}`}
+                      className={`cell${isSelected ? ' selected' : ''}${isPending ? ' pending-jump' : ''}${animating ? ' ai-animating' : ''}`}
+                      data-light={(x + y) % 2 === 0 ? 'true' : 'false'}
+                      data-row={y}
+                      data-col={x}
+                      data-animating={animating ? 'true' : undefined}
+                      draggable={stack.length > 0 && !isThinking && !aiMoveAnimating}
+                      onDragStart={handleDragStart(x, y)}
+                      onClick={() => handleCellClick(x, y)}
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={handleDrop(x, y)}
+                      style={isThinking || aiMoveAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
+                    >
+                      <Stack stack={stackToShow} animating={animating} />
+                    </div>
+                  );
+                })
+              )}
+              {/* Flying piece overlay */}
+              {flyingPiece && (
+                <FlyingPieceOverlay
+                  piece={flyingPiece.piece}
+                  from={flyingPiece.from}
+                  to={flyingPiece.to}
+                  boardPx={boardPx}
+                  boardRef={document.querySelector('.game-board')}
+                  duration={AI_MOVE_ANIMATION_DURATION}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ── Right sidebar: both players + restart + status ── */}
       <div className="player-sidebar">
-        {renderPlayerCard(1)}
-        {renderPlayerCard(2)}
-        <button
-          className="restart-btn"
-          onClick={resetGame}
-          disabled={isThinking}
-        >
-          Restart Game
-        </button>
+        {Tooltip ? (
+          <Tooltip content="Player info. The highlighted player moves next." ariaLabel="player info">
+            {renderPlayerCard(1)}
+          </Tooltip>
+        ) : renderPlayerCard(1)}
+        {Tooltip ? (
+          <Tooltip content="Player info. The highlighted player moves next." ariaLabel="player info">
+            {renderPlayerCard(2)}
+          </Tooltip>
+        ) : renderPlayerCard(2)}
+        {Tooltip ? (
+          <Tooltip content="Restart the game from the initial state." ariaLabel="restart">
+            <button
+              className="restart-btn"
+              onClick={resetGame}
+              disabled={isThinking}
+            >
+              Restart Game
+            </button>
+          </Tooltip>
+        ) : (
+          <button
+            className="restart-btn"
+            onClick={resetGame}
+            disabled={isThinking}
+          >
+            Restart Game
+          </button>
+        )}
         {lastMessage && (
           <div className="status-message" style={/unauthorized/i.test(lastMessage) ? { color: '#ff4d4f', fontWeight: 'bold' } : {}}>
             {lastMessage}

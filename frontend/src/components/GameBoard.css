@@ -1,14 +1,19 @@
 /* ─── AI move animation ─────────────────────────────────────────────── */
+
 .ai-animating {
-  transition: transform var(--ai-move-anim-duration, 1.2s) cubic-bezier(0.22, 1, 0.36, 1),
-              filter var(--ai-move-anim-duration, 1.2s) cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform, filter;
+  transition: 
+    transform var(--ai-move-anim-duration, 1.4s) cubic-bezier(0.4, 0, 0.2, 1),
+    filter var(--ai-move-anim-duration, 1.4s) cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow var(--ai-move-anim-duration, 1.4s) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, filter, box-shadow;
   z-index: 10;
+  box-shadow: 0 8px 32px 0 rgba(0,0,0,0.25), 0 0 0 2px #ffd70044;
+  transform: scale(1.08);
 }
 
 /* Set the CSS variable for animation duration on the board root or globally */
 .game-board, .ai-animating {
-  --ai-move-anim-duration: 1.2s;
+  --ai-move-anim-duration: 1.4s;
 }
 /* ─── PC thinking indicator ─────────────────────────────────────────────── */
 .pc-thinking-indicator {
