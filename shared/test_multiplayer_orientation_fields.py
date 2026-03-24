@@ -9,32 +9,40 @@ import requests
 BASE_URL = "http://localhost:8001"
 
 def _create_and_join():
+    import uuid
+    # Use a unique game_id for each test to avoid session collision
     r1 = requests.post(f"{BASE_URL}/game/create")
     d1 = r1.json()
-    game_id = d1.get("game_id")
+    game_id = d1.get("game_id") or str(uuid.uuid4())
     p1_token = d1.get("session_token")
     r2 = requests.post(f"{BASE_URL}/game/join", json={"game_id": game_id})
     d2 = r2.json()
     if r2.status_code == 200 and "session_token" in d2:
         p2_token = d2["session_token"]
     else:
-        raise Exception(f"Join failed: {d2}")
+        raise AssertionError(f"Join failed or session_token missing: status={r2.status_code}, response={d2}")
     return game_id, p1_token, p2_token
 
 class TestMultiplayerOrientationFields(unittest.TestCase):
     def test_game_state_includes_orientation_fields(self):
-        game_id, p1_token, p2_token = _create_and_join()
+        # Always create a new game for this test to avoid session collision
+        r1 = requests.post(f"{BASE_URL}/game/create")
+        d1 = r1.json()
+        game_id = d1.get("game_id")
+        p1_token = d1.get("session_token")
         # Player 1 state
-        r1 = requests.get(f"{BASE_URL}/game/{game_id}/state")
-        self.assertEqual(r1.status_code, 200)
-        data1 = r1.json()
+        r1_state = requests.get(f"{BASE_URL}/game/{game_id}/state")
+        self.assertEqual(r1_state.status_code, 200)
+        data1 = r1_state.json()
         self.assertIn("current_turn_color", data1)
         self.assertIn("starting_color", data1)
         self.assertIn("orientation", data1)
         self.assertIn("your_color", data1)
-        # Player 2 state (simulate by joining and checking state)
+        # Player 2 join and state
         r2 = requests.post(f"{BASE_URL}/game/join", json={"game_id": game_id})
-        p2_token = r2.json()["session_token"]
+        d2 = r2.json()
+        self.assertIn("session_token", d2, f"Join response missing session_token: {d2}")
+        p2_token = d2["session_token"]
         r2_state = requests.get(f"{BASE_URL}/game/{game_id}/state")
         self.assertEqual(r2_state.status_code, 200)
         data2 = r2_state.json()

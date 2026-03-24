@@ -65,7 +65,11 @@ def run_pc_vs_pc_game(depth=1, max_moves=100):
 ai.py - Gomony AI for PC mode
 Implements move generation and a simple minimax algorithm for the backend.
 """
-from shared.validate_move import validate_move
+try:
+    from shared.validate_move import validate_move
+except ImportError:
+    # Allow running from shared/ as script
+    from validate_move import validate_move
 import copy
 
 BOARD_SIZE = 12
