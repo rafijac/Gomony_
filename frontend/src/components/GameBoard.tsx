@@ -1,7 +1,4 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { useGame } from './GameContext';
-import Stack from './Stack';
 // Animation duration for AI piece movement (ms)
 export const AI_MOVE_ANIMATION_DURATION = 1200;
 
@@ -24,10 +21,12 @@ export default function GameBoard() {
     isThinking,
     orientation,
     playerNumber,
-    lastMove,
-    isAIMove,
+    sessionExpired,
+    setSessionExpired,
   } = useGame();
   const [selected, setSelected] = useState<{ x: number; y: number } | null>(null);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const navigate = useNavigate ? useNavigate() : (() => {});
 
   // ── Dynamic board sizing ──────────────────────────────────────────────────
   // rotateX(42deg) + perspective(1100px) causes the board's visual bottom to
@@ -131,7 +130,7 @@ export default function GameBoard() {
 
   // Flip the board for player 2 (orientation: 'north')
   const isFlipped = orientation === 'north';
-  const renderBoard = isFlipped ? [...board].slice().reverse() : board;
+  const displayBoard = isFlipped ? [...board].slice().reverse().map(row => [...row].reverse()) : board;
 
   // Helper: is this cell the destination of the last AI move?
   const isAIMoveDest = (x: number, y: number) => {
@@ -154,42 +153,36 @@ export default function GameBoard() {
     );
   };
 
+  // Session expiration modal/banner and redirect
+  useEffect(() => {
+    if (sessionExpired) {
+      setShowSessionModal(true);
+      setTimeout(() => {
+        setShowSessionModal(false);
+        setSessionExpired(false);
+        navigate('/lobby');
+      }, 2500);
+    }
+  }, [sessionExpired, setSessionExpired, navigate]);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, width: '100%', overflow: 'hidden', alignItems: 'center', padding: '0 10px' }}>
-
-      {/* ── Player HUD and Restart above board ── */}
-      <div className="player-hud-bar">
-        {renderPlayerCard(1)}
-        {renderPlayerCard(2)}
-        <button
-          className="restart-btn"
-          onClick={resetGame}
-          disabled={isThinking}
-        >
-          Restart Game
-        </button>
-      </div>
-
-      {/* ── Board + status below ── */}
+    <div style={{ display: 'flex', flexDirection: 'row', flex: 1, minHeight: 0, width: '100%', overflow: 'hidden', alignItems: 'stretch' }}>
+      {showSessionModal && (
+        <div className="session-expired-modal">
+          <div className="modal-content">
+            <h2>Session Expired</h2>
+            <p>Your game session has expired or was not found. Redirecting to lobby...</p>
+          </div>
+        </div>
+      )}
+      {/* ── Center: board only ── */}
       <div
         ref={boardAreaRef}
-        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden', width: '100%' }}
+        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden' }}
       >
-        {/* Status messages */}
-        {lastMessage && (
-          <div className="status-message" style={/unauthorized/i.test(lastMessage) ? { color: '#ff4d4f', fontWeight: 'bold' } : {}}>
-            {lastMessage}
-          </div>
-        )}
-        {pendingJump && (
-          <div className="status-message" style={{ color: '#f0a500' }}>Jump again! Keep jumping with the highlighted piece.</div>
-        )}
-        {gameMode === 'PC' && isThinking && (
-          <div className="pc-thinking-indicator">PC is thinking...</div>
-        )}
         <div className="board-perspective-wrapper">
           <div className="game-board" style={{ width: boardPx, height: boardPx }}>
-            {renderBoard.map((row, yIdx) =>
+            {displayBoard.map((row, yIdx) =>
               row.map((stack, x) => {
                 const y = isFlipped ? 11 - yIdx : yIdx;
                 const isSelected = selected?.x === x && selected?.y === y;
@@ -219,6 +212,30 @@ export default function GameBoard() {
         </div>
       </div>
 
+      {/* ── Right sidebar: both players + restart + status ── */}
+      <div className="player-sidebar">
+        {renderPlayerCard(1)}
+        {renderPlayerCard(2)}
+        <button
+          className="restart-btn"
+          onClick={resetGame}
+          disabled={isThinking}
+        >
+          Restart Game
+        </button>
+        {lastMessage && (
+          <div className="status-message" style={/unauthorized/i.test(lastMessage) ? { color: '#ff4d4f', fontWeight: 'bold' } : {}}>
+            {lastMessage}
+          </div>
+        )}
+        {pendingJump && (
+          <div className="status-message" style={{ color: '#f0a500' }}>Jump again!</div>
+        )}
+        {gameMode === 'PC' && isThinking && (
+          <div className="pc-thinking-indicator">PC is thinking...</div>
+        )}
+      </div>
     </div>
+  );
   );
 }

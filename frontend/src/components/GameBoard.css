@@ -44,10 +44,8 @@
   flex-shrink: 0;
   padding: 0;
   background: #2a1608;
-  /* Elegant frame: deep brown/black with gold accent bottom */
   border: 10px solid #3a2412;
-  border-bottom: 26px solid #d1b06b;
-  border-radius: 4px 4px 2px 2px;
+  border-radius: 4px;
   transform: rotateX(42deg);
   transform-origin: top center;
   box-shadow:
@@ -56,17 +54,7 @@
     0 50px 90px rgba(0, 0, 0, 0.98),
     0 0 140px rgba(0, 0, 0, 0.6);
 }
-/* ─── Player HUD bar above board ─────────────────────────────── */
-.player-hud-bar {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 18px;
-  margin-bottom: 18px;
-  width: 100%;
-  max-width: 900px;
-}
+
 
 /* ─── Board cells ──────────────────────────────────────────────── */
 .cell {
@@ -190,9 +178,10 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  width: 130px;
+  width: 160px;
   flex-shrink: 0;
-  padding: 8px 0;
+  padding: 12px 8px;
+  overflow: visible;
 }
 
 .restart-btn {

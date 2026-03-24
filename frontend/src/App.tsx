@@ -9,7 +9,7 @@ import './App.css';
 
 // AppContent is separated so it can use the GameContext
 function AppContent() {
-  const { gameMode, setGameMode, sessionToken, setMultiplayerSession } = useGame();
+  const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame } = useGame();
   const [showModeModal, setShowModeModal] = React.useState(true);
   const [showLobby, setShowLobby] = React.useState(false);
 
@@ -24,6 +24,7 @@ function AppContent() {
       setShowLobby(true);
       setShowModeModal(false);
     } else {
+      resetGame();
       setGameMode(mode);
       setShowModeModal(false);
     }

@@ -33,7 +33,20 @@ interface GameContextValue {
   orientation: 'south' | 'north';
   sessionToken: string | null;
   gameId: string | null;
-  setMultiplayerSession: (session: { gameId: string, sessionToken: string, playerNumber: number, orientation: 'south' | 'north' }) => void;
+  setMultiplayerSession: (session: {
+    gameId: string,
+    sessionToken: string,
+    playerNumber: number,
+    orientation: 'south' | 'north',
+    current_turn_color?: string,
+    starting_color?: string,
+    your_color?: string,
+  }) => void;
+  currentTurnColor?: string;
+  startingColor?: string;
+  yourColor?: string;
+  sessionExpired: boolean;
+  setSessionExpired: (expired: boolean) => void;
 }
 
 const GameContext = createContext<GameContextValue>({
@@ -53,7 +66,25 @@ const GameContext = createContext<GameContextValue>({
   sessionToken: null,
   gameId: null,
   setMultiplayerSession: () => {},
+  currentTurnColor: undefined,
+  startingColor: undefined,
+  yourColor: undefined,
+  sessionExpired: false,
+  setSessionExpired: () => {},
 });
+interface MoveResponse {
+  valid: boolean;
+  pending_jump?: [number, number] | null;
+  current_player?: number;
+  board?: number[][][];
+  reason?: string;
+  session_token?: string;
+  orientation?: 'south' | 'north';
+  player_number?: number;
+  current_turn_color?: string;
+  starting_color?: string;
+  your_color?: string;
+}
 
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -67,9 +98,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [orientation, setOrientation] = useState<'south' | 'north'>('south');
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [gameId, setGameId] = useState<string | null>(null);
+  const [currentTurnColor, setCurrentTurnColor] = useState<string | undefined>(undefined);
+  const [startingColor, setStartingColor] = useState<string | undefined>(undefined);
+  const [yourColor, setYourColor] = useState<string | undefined>(undefined);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
-  // Set multiplayer session state from lobby
-  const setMultiplayerSession = useCallback((session: { gameId: string, sessionToken: string, playerNumber: number, orientation: 'south' | 'north' }) => {
+  // Set multiplayer session state from lobby or backend
+  const setMultiplayerSession = useCallback((session: {
+    gameId: string,
+    sessionToken: string,
+    playerNumber: number,
+    orientation: 'south' | 'north',
+    current_turn_color?: string,
+    starting_color?: string,
+    your_color?: string,
+  }) => {
     setGameId(session.gameId);
     setSessionToken(session.sessionToken);
     setApiSessionToken(session.sessionToken);
@@ -77,10 +120,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setOrientation(session.orientation);
     setGameMode('MP');
     setLastMessage('');
+    if (session.current_turn_color) setCurrentTurnColor(session.current_turn_color);
+    if (session.starting_color) setStartingColor(session.starting_color);
+    if (session.your_color) setYourColor(session.your_color);
     // Optionally: fetch initial board state for this session
   }, []);
 
-  // On mount, clear session token and orientation (fresh session)
+  // On mount, reset backend to ensure frontend and backend are in sync
   useEffect(() => {
     setSessionToken(null);
     setApiSessionToken(null);
@@ -88,6 +134,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setOrientation('south');
     setGameId(null);
     setGameMode('2P');
+    api.post<{ board: number[][][]; current_player: number }>('/reset').then(res => {
+      setBoard(res.data.board);
+      setCurrentPlayer(res.data.current_player);
+      setPendingJump(null);
+    }).catch(() => {});
   }, []);
 
   const triggerAIMove = useCallback(async () => {
@@ -107,15 +158,23 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Multiplayer polling for board sync
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (gameMode === 'MP' && gameId && sessionToken && playerNumber) {
       const poll = async () => {
         try {
           const res = await fetch(`http://localhost:8001/game/${gameId}/state`);
+          if (res.status === 410 || res.status === 404) {
+            setSessionExpired(true);
+            setLastMessage('Session expired or not found.');
+            return;
+          }
           const data = await res.json();
           if (data.board) setBoard(data.board);
           if (data.current_player != null) setCurrentPlayer(data.current_player);
           setPendingJump(data.pending_jump ?? null);
+          if (data.current_turn_color) setCurrentTurnColor(data.current_turn_color);
+          if (data.starting_color) setStartingColor(data.starting_color);
+          if (data.your_color) setYourColor(data.your_color);
         } catch {
           setLastMessage('Lost connection to server.');
         }
@@ -155,20 +214,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             session_token: sessionToken,
           })
         });
-        const result = await res.json();
+        if (res.status === 410 || res.status === 404) {
+          setSessionExpired(true);
+          setLastMessage('Session expired or not found.');
+          return null;
+        }
+        const result: MoveResponse = await res.json();
         if (result.session_token && result.session_token !== sessionToken) {
           setSessionToken(result.session_token);
           setApiSessionToken(result.session_token);
         }
         if (result.orientation) setOrientation(result.orientation);
         if (result.player_number) setPlayerNumber(result.player_number);
+        if (result.current_turn_color) setCurrentTurnColor(result.current_turn_color);
+        if (result.starting_color) setStartingColor(result.starting_color);
+        if (result.your_color) setYourColor(result.your_color);
         if (result.valid) {
           if (result.board) setBoard(result.board);
           const newPlayer = result.current_player ?? currentPlayer;
           if (result.current_player != null) setCurrentPlayer(newPlayer);
           const pj = result.pending_jump ?? null;
           setPendingJump(pj);
-          setLastMessage(result.reason);
+          setLastMessage(result.reason || '');
           return { valid: true, pendingJump: pj, currentPlayer: newPlayer };
         } else {
           setLastMessage(`Invalid: ${result.reason}`);
@@ -176,7 +243,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         // Local/PC move
-        const result = await postMove({
+        const result: MoveResponse = await postMove({
           current_state: board,
           start_pos: [from.y, from.x],
           end_pos: [to.y, to.x],
@@ -188,13 +255,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         if (result.orientation) setOrientation(result.orientation);
         if (result.player_number) setPlayerNumber(result.player_number);
+        if (result.current_turn_color) setCurrentTurnColor(result.current_turn_color);
+        if (result.starting_color) setStartingColor(result.starting_color);
+        if (result.your_color) setYourColor(result.your_color);
         if (result.valid) {
           if (result.board) setBoard(result.board);
           const newPlayer = result.current_player ?? currentPlayer;
           if (result.current_player != null) setCurrentPlayer(newPlayer);
           const pj = result.pending_jump ?? null;
           setPendingJump(pj);
-          setLastMessage(result.reason);
+          setLastMessage(result.reason || '');
           return { valid: true, pendingJump: pj, currentPlayer: newPlayer };
         } else {
           setLastMessage(`Invalid: ${result.reason}`);
@@ -225,6 +295,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionToken,
       gameId,
       setMultiplayerSession,
+      currentTurnColor,
+      startingColor,
+      yourColor,
+      sessionExpired,
+      setSessionExpired,
     }}>
       {children}
     </GameContext.Provider>
