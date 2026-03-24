@@ -13,11 +13,6 @@ are expected to FAIL with the current main.py because those endpoints have not
 been implemented yet.  They serve as a specification / TODO for the backend.
 """
 
-import os
-import sys
-
-# Ensure project root is importable when pytest is invoked from anywhere
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
 from fastapi.testclient import TestClient

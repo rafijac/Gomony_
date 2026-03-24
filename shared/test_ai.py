@@ -1,10 +1,7 @@
 
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import json
-from main import run_pc_vs_pc_game
+from shared.ai import run_pc_vs_pc_game
 import unittest
 from shared.ai import enumerate_valid_moves, choose_ai_move
 

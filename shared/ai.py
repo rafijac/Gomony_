@@ -1,3 +1,66 @@
+# --- Added from main.py ---
+def run_pc_vs_pc_game(depth=1, max_moves=100):
+    board = make_initial_board()
+    current_player = 1
+    move_count = 0
+    log = []
+    winner = None
+    result = None
+    for i in range(max_moves):
+        move = choose_ai_move(board, current_player, depth=depth)
+        if not move:
+            player_pieces = [cell[-1] for row in board for cell in row if cell and ((current_player == 1 and cell[-1] in (1,3)) or (current_player == 2 and cell[-1] in (2,4)))]
+            opponent_pieces = [cell[-1] for row in board for cell in row if cell and ((current_player == 1 and cell[-1] in (2,4)) or (current_player == 2 and cell[-1] in (1,3)))]
+            if not player_pieces:
+                winner = 2 if current_player == 1 else 1
+                result = "Game over: no pieces for player {}".format(current_player)
+            elif not opponent_pieces:
+                winner = current_player
+                result = "Game over: opponent has no pieces"
+            else:
+                winner = 2 if current_player == 1 else 1
+                result = "No valid moves for player {}".format(current_player)
+            break
+        sr, sc = move[0]
+        er, ec = move[1]
+        valid, reason, kinged = validate_move(board, (sr, sc), (er, ec))
+        if not valid:
+            result = f"Invalid move by AI: {move} | Reason: {reason}"
+            winner = 2 if current_player == 1 else 1
+            break
+        _apply_move(board, sr, sc, er, ec, kinged)
+        log.append({
+            "move_num": move_count + 1,
+            "player": current_player,
+            "move": {"start_pos": [sr, sc], "end_pos": [er, ec]},
+            "reason": reason,
+            "board": copy.deepcopy(board),
+        })
+        move_count += 1
+        opponent_pieces = [cell[-1] for row in board for cell in row if cell and ((current_player == 1 and cell[-1] in (2,4)) or (current_player == 2 and cell[-1] in (1,3)))]
+        if not opponent_pieces:
+            winner = current_player
+            result = "Game over: opponent has no pieces"
+            break
+        back_row = 11 if current_player == 1 else 0
+        for col in range(12):
+            stack = board[back_row][col]
+            if stack and stack[-1] in ((1,3) if current_player == 1 else (2,4)) and len(stack) >= 3:
+                winner = current_player
+                result = f"Game over: player {current_player} stack of 3+ reached back row"
+                break
+        if result:
+            break
+        current_player = 2 if current_player == 1 else 1
+    if not result:
+        result = "Max moves reached"
+    return {
+        "log": log,
+        "result": result,
+        "winner": winner,
+        "final_board": board,
+        "move_count": move_count,
+    }
 """
 ai.py - Gomony AI for PC mode
 Implements move generation and a simple minimax algorithm for the backend.

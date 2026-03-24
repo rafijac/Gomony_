@@ -11,10 +11,14 @@ BASE_URL = "http://localhost:8001"
 def _create_and_join():
     r1 = requests.post(f"{BASE_URL}/game/create")
     d1 = r1.json()
-    game_id = d1["game_id"]
-    p1_token = d1["session_token"]
+    game_id = d1.get("game_id")
+    p1_token = d1.get("session_token")
     r2 = requests.post(f"{BASE_URL}/game/join", json={"game_id": game_id})
-    p2_token = r2.json()["session_token"]
+    d2 = r2.json()
+    if r2.status_code == 200 and "session_token" in d2:
+        p2_token = d2["session_token"]
+    else:
+        raise Exception(f"Join failed: {d2}")
     return game_id, p1_token, p2_token
 
 class TestMultiplayerOrientationFields(unittest.TestCase):

@@ -1,10 +1,29 @@
+# TDD: Session token helpers (main.py or helper)
+try:
+    from main import create_session_token, validate_session_token, expire_session_token
+except ImportError:
+    create_session_token = validate_session_token = expire_session_token = None
+# TDD: SecurityMiddleware (security.py)
+try:
+    from security import SecurityMiddleware
+except ImportError:
+    SecurityMiddleware = None
+# TDD: AuthManager class (auth.py)
+try:
+    from auth import AuthManager
+except ImportError:
+    AuthManager = None
 
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import unittest
 import requests
+
+# TDD: User class (user.py)
+import pytest
+try:
+    from user import User
+except ImportError:
+    User = None
 
 BASE_URL = "http://localhost:8001"
 
@@ -21,6 +40,45 @@ def _create_and_join():
 
 
 class TestMultiplayerSessions(unittest.TestCase):
+
+    def test_create_and_validate_session_token(self):
+        """TDD: create_session_token should generate a valid token, validate_session_token should accept it, expire_session_token should invalidate it."""
+        if not (create_session_token and validate_session_token and expire_session_token):
+            pytest.skip("Session token helpers not implemented yet")
+        token = create_session_token(expires_in=2)
+        assert isinstance(token, str)
+        assert validate_session_token(token) is True
+        expire_session_token(token)
+        assert validate_session_token(token) is False
+
+    def test_security_middleware_rate_limit(self):
+        """TDD: SecurityMiddleware should rate limit after N requests."""
+        if SecurityMiddleware is None:
+            pytest.skip("SecurityMiddleware not implemented yet")
+        sm = SecurityMiddleware(max_requests=2, window_seconds=1)
+        user_id = "testuser"
+        assert sm.allow_request(user_id) is True
+        assert sm.allow_request(user_id) is True
+        assert sm.allow_request(user_id) is False
+
+    def test_auth_manager_register_and_login(self):
+        """TDD: AuthManager should register and login a user, returning a session token."""
+        if AuthManager is None:
+            pytest.skip("AuthManager not implemented yet")
+        am = AuthManager()
+        token = am.register_user("guest2")
+        assert isinstance(token, str)
+        login_token = am.login_user("guest2")
+        assert login_token == token
+
+    def test_user_creation_assigns_unique_id(self):
+        """TDD: User class should assign a unique id on creation."""
+        if User is None:
+            pytest.skip("User class not implemented yet")
+        user = User(username="guest1")
+        assert hasattr(user, "id")
+        assert user.username == "guest1"
+        assert isinstance(user.id, str)
 
     # ── Create / Join ──────────────────────────────────────────────────────
 
@@ -139,6 +197,7 @@ class TestMultiplayerSessions(unittest.TestCase):
         self.assertNotEqual(s1["board"], s2["board"])
 
     # ── Cleanup ────────────────────────────────────────────────────────────
+
 
     def test_session_cleanup(self):
         # Cleanup only removes completed games; a fresh game shouldn't be removed
