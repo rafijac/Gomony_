@@ -1,5 +1,5 @@
 # --- Added from main.py ---
-from board import make_initial_board, apply_move
+from board import make_initial_board, apply_move, get_jumps_from
 
 def run_pc_vs_pc_game(depth=1, max_moves=100):
     board = make_initial_board()
@@ -142,25 +142,17 @@ def minimax(board, player, depth, maximizing):
         new_board = copy.deepcopy(board)
         sr, sc = move[0]
         er, ec = move[1]
-        # Apply move
         valid, _, kinged = validate_move(new_board, (sr, sc), (er, ec))
         if not valid:
             continue
-        dr, dc = er - sr, ec - sc
-        # Remove jumped piece if jump move
-        if (abs(dr), abs(dc)) == (2, 2):
-            mr, mc = sr + dr // 2, sc + dc // 2
-            new_board[mr][mc] = []
-        moving_stack = new_board[sr][sc][:]
-        new_board[er][ec] = new_board[er][ec] + moving_stack
-        new_board[sr][sc] = []
-        if kinged:
-            if new_board[er][ec]:
-                if new_board[er][ec][-1] == 1:
-                    new_board[er][ec][-1] = 3
-                elif new_board[er][ec][-1] == 2:
-                    new_board[er][ec][-1] = 4
-        score, _ = minimax(new_board, player, depth - 1, not maximizing)
+        apply_move(new_board, sr, sc, er, ec, kinged)
+        # Multi-jump continuation: if a jump leaves more jumps available, the
+        # same player continues (turn does not switch to the opponent).
+        is_jump = abs(er - sr) == 2
+        if is_jump and not kinged and get_jumps_from(new_board, (er, ec)):
+            score, _ = minimax(new_board, player, depth - 1, maximizing)
+        else:
+            score, _ = minimax(new_board, player, depth - 1, not maximizing)
         if maximizing:
             if score > best_score:
                 best_score = score
