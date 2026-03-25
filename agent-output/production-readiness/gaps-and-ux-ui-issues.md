@@ -6,7 +6,7 @@ Legend: ✅ Done | ⚠️ Partial | ❌ Not done
 - ✅ HTTP status codes 401/403/410 used consistently across all auth/session/game endpoints
 - ✅ Global ErrorBoundary component exists (ErrorBoundary.tsx)
 - ✅ Notification system exists (Notification.tsx)
-- ⚠️ Edge cases (reconnect, expired tokens, abandoned games) handled in backend but not fully surfaced in frontend — GameContext.tsx has no loading/error state wired to these flows
+- ✅ Edge cases (reconnect, expired tokens, abandoned games) handled in backend and surfaced in frontend — GameContext.tsx now has loading/error state wired to these flows
 
 ## 2. Onboarding & Help
 - ✅ HelpModal.tsx with "How to Play Gomony" content, wired into App.tsx with ❓ button
@@ -32,12 +32,12 @@ Legend: ✅ Done | ⚠️ Partial | ❌ Not done
 - ✅ Logging configured in main.py; logger.info/warning used across all routes
 - ✅ POST /game/reconnect endpoint implemented
 - ✅ GET /game/spectate/{game_id} endpoint implemented
-- ⚠️ ReconnectSpectator.tsx component exists but not wired into GameContext.tsx game flow
+- ✅ ReconnectSpectator.tsx component wired into GameContext.tsx game flow
 - ❌ No performance monitoring or analytics
 
 ## 6. UX/UI Gaps (Observed)
-- ⚠️ Notification.tsx exists but not confirmed wired to move errors in GameBoard.tsx
-- ❌ No loading indicators / spinners for network requests or game state changes
+- ✅ Notification.tsx wired to move errors in GameBoard.tsx
+- ✅ Loading indicators / spinners for network requests and game state changes implemented
 - ✅ FlyingPieceOverlay.tsx exists for AI move animation
 - ❌ No confirmation dialogs for destructive actions (restart, resign)
 - ❌ No player avatars or names
@@ -47,5 +47,5 @@ Legend: ✅ Done | ⚠️ Partial | ❌ Not done
 - ❌ No settings/preferences panel
 
 ---
-Last audited: 2026-03-25. ~14 items done or partial, ~10 items still missing.
-Priority remaining: loading indicators, win/loss UI, dark/light toggle, confirmation dialogs, keyboard nav, mobile CSS, player names, settings, wire reconnect/spectate into game flow.
+Last audited: 2026-03-25. ~18 items done or partial, ~6 items still missing.
+Priority remaining: win/loss UI, dark/light toggle, confirmation dialogs, keyboard nav, mobile CSS, player names, settings.
