@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GameProvider, useGame } from './components/GameContext';
 import GameBoard from './components/GameBoard';
 import ModeSelectModal from './components/ModeSelectModal';
@@ -7,17 +7,28 @@ import { setSessionToken } from './api';
 import LobbyModal from './components/LobbyModal';
 // import Notification from './components/Notification';
 import ErrorBoundary from './components/ErrorBoundary';
-import HelpModal from './components/HelpModal';
-import Tooltip from './components/Tooltip';
+// import HelpModal from './components/HelpModal';
+// import Tooltip from './components/Tooltip';
 import './App.css';
 
 // AppContent is separated so it can use the GameContext
-function AppContent() {
   const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, gameId } = useGame();
-  const [showModeModal, setShowModeModal] = React.useState(true);
-  const [showLobby, setShowLobby] = React.useState(false);
-  const [showHelp, setShowHelp] = React.useState(false);
-  const [onboarded, setOnboarded] = React.useState(() => localStorage.getItem('gomony_onboarded') === '1');
+  const [showModeModal, setShowModeModal] = useState(true);
+  const [showLobby, setShowLobby] = useState(false);
+  // Dark/light mode state
+  const [theme, setTheme] = useState(() => {
+    const stored = localStorage.getItem('gomony_theme');
+    if (stored === 'dark' || stored === 'light') return stored;
+    // Default: match system
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('gomony_theme', theme);
+  }, [theme]);
+  // const [showHelp, setShowHelp] = React.useState(false);
+  // const [onboarded, setOnboarded] = React.useState(() => localStorage.getItem('gomony_onboarded') === '1');
 
   // Propagate session token to API module
   useEffect(() => {
@@ -25,14 +36,14 @@ function AppContent() {
   }, [sessionToken]);
 
   // Show onboarding overlay for first-time users
-  useEffect(() => {
-    if (!onboarded && !showModeModal && !showLobby) {
-      // Show onboarding overlay
-      setShowHelp(true);
-      localStorage.setItem('gomony_onboarded', '1');
-      setOnboarded(true);
-    }
-  }, [onboarded, showModeModal, showLobby]);
+  // useEffect(() => {
+  //   if (!onboarded && !showModeModal && !showLobby) {
+  //     // Show onboarding overlay
+  //     setShowHelp(true);
+  //     localStorage.setItem('gomony_onboarded', '1');
+  //     setOnboarded(true);
+  //   }
+  // }, [onboarded, showModeModal, showLobby]);
 
   // Show mode selection modal at game start
   const handleSelect = (mode: '2P' | 'PC' | 'MP') => {
@@ -87,21 +98,16 @@ function AppContent() {
             <span className="gomony-banner-title">GOMONY<sup className="gomony-copyright-sup">©</sup></span>
           </div>
         </div>
-        <Tooltip
-          content="Show help and rules"
-          ariaLabel="help"
-          dismissKey="help_btn"
-          disableAfterFirstUse={true}
+        {/* Dark/Light mode toggle button */}
+        <button
+          className="theme-toggle-btn"
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          style={{ marginLeft: 16, fontSize: '1.5rem', background: 'none', border: 'none', color: theme === 'dark' ? '#ffe082' : '#3a2412', cursor: 'pointer' }}
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         >
-          <button
-            className="help-btn"
-            aria-label="help"
-            style={{ marginLeft: 16, fontSize: '1.5rem', background: 'none', border: 'none', color: '#ffe082', cursor: 'pointer' }}
-            onClick={() => setShowHelp(true)}
-          >
-            <span aria-label="help icon" role="img">❓</span>
-          </button>
-        </Tooltip>
+          {theme === 'dark' ? '🌞' : '🌙'}
+        </button>
       </div>
       {showModeModal && <ModeSelectModal onSelect={handleSelect} showMultiplayer />}
       {showLobby && <LobbyModal onCreate={handleCreate} onJoin={handleJoin} onCancel={handleCancelLobby} />}
@@ -115,7 +121,7 @@ function AppContent() {
           <GameBoard Tooltip={Tooltip} />
         </>
       )}
-      <HelpModal open={showHelp} onClose={() => setShowHelp(false)} />
+      {/* HelpModal removed */}
       <footer className="app-footer">
         <span className="app-footer-name">GOMONY</span>
         <span className="app-footer-sep">&bull;</span>
