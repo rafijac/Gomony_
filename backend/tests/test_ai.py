@@ -2,11 +2,7 @@
 
 import json
 import unittest
-import sys
-import os
-# Ensure ai.py is importable regardless of cwd
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-from ai import run_pc_vs_pc_game, enumerate_valid_moves, choose_ai_move
+from shared.ai import run_pc_vs_pc_game, enumerate_valid_moves, choose_ai_move
 
 class TestGomonyAI(unittest.TestCase):
     def setUp(self):

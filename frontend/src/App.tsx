@@ -7,6 +7,8 @@ import { setSessionToken } from './api';
 import LobbyModal from './components/LobbyModal';
 import Notification from './components/Notification';
 import ErrorBoundary from './components/ErrorBoundary';
+import HelpModal from './components/HelpModal';
+import Tooltip from './components/Tooltip';
 import './App.css';
 
 // AppContent is separated so it can use the GameContext
@@ -14,11 +16,23 @@ function AppContent() {
   const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, lastMessage, sessionExpired, gameId } = useGame();
   const [showModeModal, setShowModeModal] = React.useState(true);
   const [showLobby, setShowLobby] = React.useState(false);
+  const [showHelp, setShowHelp] = React.useState(false);
+  const [onboarded, setOnboarded] = React.useState(() => localStorage.getItem('gomony_onboarded') === '1');
 
   // Propagate session token to API module
   useEffect(() => {
     setSessionToken(sessionToken || null);
   }, [sessionToken]);
+
+  // Show onboarding overlay for first-time users
+  useEffect(() => {
+    if (!onboarded && !showModeModal && !showLobby) {
+      // Show onboarding overlay
+      setShowHelp(true);
+      localStorage.setItem('gomony_onboarded', '1');
+      setOnboarded(true);
+    }
+  }, [onboarded, showModeModal, showLobby]);
 
   // Show mode selection modal at game start
   const handleSelect = (mode: '2P' | 'PC' | 'MP') => {
@@ -73,6 +87,21 @@ function AppContent() {
             <span className="gomony-banner-title">GOMONY<sup className="gomony-copyright-sup">©</sup></span>
           </div>
         </div>
+        <Tooltip
+          content="Show help and rules"
+          ariaLabel="help"
+          dismissKey="help_btn"
+          disableAfterFirstUse={true}
+        >
+          <button
+            className="help-btn"
+            aria-label="help"
+            style={{ marginLeft: 16, fontSize: '1.5rem', background: 'none', border: 'none', color: '#ffe082', cursor: 'pointer' }}
+            onClick={() => setShowHelp(true)}
+          >
+            <span aria-label="help icon" role="img">❓</span>
+          </button>
+        </Tooltip>
       </div>
       {showModeModal && <ModeSelectModal onSelect={handleSelect} showMultiplayer />}
       {showLobby && <LobbyModal onCreate={handleCreate} onJoin={handleJoin} onCancel={handleCancelLobby} />}
@@ -83,9 +112,10 @@ function AppContent() {
               Share this game code: <span style={{ fontFamily: 'monospace', fontSize: '1.2em' }}>{gameId}</span>
             </div>
           )}
-          <GameBoard />
+          <GameBoard Tooltip={Tooltip} />
         </>
       )}
+      <HelpModal open={showHelp} onClose={() => setShowHelp(false)} />
       <footer className="app-footer">
         <span className="app-footer-name">GOMONY</span>
         <span className="app-footer-sep">&bull;</span>

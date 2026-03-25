@@ -3,7 +3,7 @@
   "version": "1.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently --names \"API,UI\" --prefix-colors \"cyan,magenta\" \"c:/Users/rafij/Gomony/.venv/Scripts/python.exe -m uvicorn main:app --host 127.0.0.1 --port 8001 --reload\" \"npm run dev --prefix frontend\""
+    "dev": "concurrently --names \"API,UI\" --prefix-colors \"cyan,magenta\" \"c:/Users/rafij/Gomony/.venv/Scripts/python.exe -m uvicorn main:app --app-dir backend --host 127.0.0.1 --port 8001 --reload\" \"npm run dev --prefix frontend\""
   },
   "devDependencies": {
     "concurrently": "^9.0.0"

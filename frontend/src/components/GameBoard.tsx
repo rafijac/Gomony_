@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import FlyingPieceOverlay from './FlyingPieceOverlay';
+import ReconnectSpectator from './ReconnectSpectator';
 import { useGame } from './GameContext';
 import Stack from './Stack';
 import { useNavigate } from 'react-router-dom';
@@ -32,6 +33,7 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
     sessionExpired,
     setSessionExpired,
     setBoardStateFromAI,
+    yourColor,
   } = useGame();
   const [selected, setSelected] = useState<{ x: number; y: number } | null>(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
@@ -203,25 +205,25 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
     );
   };
 
-  // Session expiration modal/banner and redirect
-  useEffect(() => {
-    if (sessionExpired) {
-      setShowSessionModal(true);
-      setTimeout(() => {
-        setShowSessionModal(false);
-        setSessionExpired(false);
-        navigate('/lobby');
-      }, 2500);
-    }
-  }, [sessionExpired, setSessionExpired, navigate]);
+
+  // Show reconnect/spectator UI if session expired or in spectator mode
+  const showReconnect = sessionExpired;
+  const showSpectator = gameMode === 'MP' && playerNumber == null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'row', flex: 1, minHeight: 0, minWidth: 0, width: '100%', height: '100%', overflow: 'hidden', alignItems: 'stretch' }}>
-      {showSessionModal && (
+      {(showReconnect || showSpectator) && (
         <div className="session-expired-modal">
           <div className="modal-content">
-            <h2>Session Expired</h2>
-            <p>Your game session has expired or was not found. Redirecting to lobby...</p>
+            <ReconnectSpectator
+              reconnectAvailable={showReconnect}
+              onReconnect={() => {
+                setSessionExpired(false);
+                window.location.reload();
+              }}
+              spectatorMode={showSpectator}
+              reconnectError={showReconnect ? 'Session expired or not found.' : undefined}
+            />
           </div>
         </div>
       )}

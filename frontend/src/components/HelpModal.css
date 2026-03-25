@@ -1,0 +1,121 @@
+  max-width: 480px;
+  background: #181c24;
+  color: #f0f0f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px #000a;
+  padding: 2rem 2.5rem 1.5rem 2.5rem;
+  position: relative;
+  font-size: 1.08rem;
+}
+.help-modal h2 {
+  margin-top: 0;
+  font-size: 2rem;
+  color: #ffe082;
+}
+.help-modal h3 {
+  margin-bottom: 0.3em;
+  color: #7ad6b6;
+}
+.help-modal ul {
+  margin: 0 0 1em 1.2em;
+  padding: 0;
+}
+.help-modal li {
+  margin-bottom: 0.4em;
+}
+.modal-close-btn {
+  position: absolute;
+  top: 1.1rem;
+  right: 1.3rem;
+  background: none;
+  border: none;
+  color: #ffe082;
+  font-size: 2rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.modal-backdrop {
+  position: fixed;
+  z-index: 1000;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.help-modal {
+  max-width: 95vw;
+  width: 100%;
+  max-height: 90vh;
+  background: #181c24;
+  color: #f0f0f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px #000a;
+  padding: 0;
+  position: relative;
+  font-size: 1.08rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-header-sticky {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 2.5rem 0.5rem 2.5rem;
+  background: #181c24;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.modal-content-scrollable {
+  overflow-y: auto;
+  padding: 0 2.5rem 1.5rem 2.5rem;
+  max-height: calc(90vh - 4.5rem);
+}
+.help-modal h2 {
+  margin-top: 0;
+  font-size: 2rem;
+  color: #ffe082;
+}
+.help-modal h3 {
+  margin-bottom: 0.3em;
+  color: #7ad6b6;
+}
+.help-modal ul {
+  margin: 0 0 1em 1.2em;
+  padding: 0;
+}
+.help-modal li {
+  margin-bottom: 0.4em;
+}
+.modal-close-btn {
+  background: none;
+  border: none;
+  color: #ffe082;
+  font-size: 2rem;
+  cursor: pointer;
+  line-height: 1;
+  z-index: 3;
+}
+.modal-backdrop {
+  position: fixed;
+  z-index: 1000;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+@media (max-width: 600px) {
+  .help-modal {
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  .modal-header-sticky, .modal-content-scrollable {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

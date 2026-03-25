@@ -1,7 +1,7 @@
 
 import unittest
 from shared.validate_move import validate_move
-from main import _apply_move, make_initial_board
+from board import apply_move as _apply_move, make_initial_board
 
 class TestGomonyStacking(unittest.TestCase):
     def setUp(self):

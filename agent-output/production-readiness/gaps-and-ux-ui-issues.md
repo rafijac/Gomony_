@@ -1,38 +1,51 @@
 # Gomony Production Readiness Gaps & UX/UI Issues
 
+Legend: ✅ Done | ⚠️ Partial | ❌ Not done
+
 ## 1. Error Handling & User Feedback
-- Inconsistent use of HTTP status codes for errors (should use 401/403/410 for auth/session issues)
-- No global error boundary or user-friendly error notifications for unexpected failures
-- Edge cases (reconnect, expired/invalid tokens, abandoned games) not surfaced to user
+- ✅ HTTP status codes 401/403/410 used consistently across all auth/session/game endpoints
+- ✅ Global ErrorBoundary component exists (ErrorBoundary.tsx)
+- ✅ Notification system exists (Notification.tsx)
+- ⚠️ Edge cases (reconnect, expired tokens, abandoned games) handled in backend but not fully surfaced in frontend — GameContext.tsx has no loading/error state wired to these flows
 
 ## 2. Onboarding & Help
-- No onboarding, help, tooltips, or in-app instructions for new users
-- No guidance on how to play, join, or create games, or what the rules are
+- ✅ HelpModal.tsx with "How to Play Gomony" content, wired into App.tsx with ❓ button
+- ✅ Tooltip.tsx exists and used on board and help button
+- ⚠️ Tooltip dismissal persisted via localStorage — not fully verified from browser
 
 ## 3. Accessibility & Responsiveness
-- Some accessibility (aria-label for king), responsive CSS exists
-- No evidence of keyboard navigation, focus management, or ARIA roles for board/controls
+- ✅ ARIA labels on help button, tooltips, HelpModal (role="dialog", aria-modal)
+- ⚠️ No @media queries confirmed in GameBoard.css — mobile responsiveness is partial
+- ❌ No keyboard navigation or focus management on board/cells
+- ❌ No ARIA roles (role="grid", role="button") on board cells or controls
 
 ## 4. Security & Authentication
-- Session token type/expiration/invalidation not finalized
-- No user authentication (anyone with code can join)
-- No brute force/replay/session hijack protection
+- ✅ Session tokens with TTL expiration (session_token_helpers.py)
+- ✅ Token invalidation on logout (auth.py invalidate_token, wired in routes/auth.py)
+- ✅ Rate limiting per identifier (security.py SecurityMiddleware)
+- ✅ Replay protection — expired/invalidated tokens rejected at move and logout endpoints
+- ⚠️ Join still only requires game_id — no password or invite enforcement; auth is optional not mandatory
 
 ## 5. Versioning & Diagnostics
-- No enforced versioning or changelog for releases
-- No spectator support or reconnect flow
-- No performance monitoring, analytics, or logging for diagnostics
+- ✅ GET /version endpoint returns version, git commit, status
+- ✅ CHANGELOG.md exists and is maintained
+- ✅ Logging configured in main.py; logger.info/warning used across all routes
+- ✅ POST /game/reconnect endpoint implemented
+- ✅ GET /game/spectate/{game_id} endpoint implemented
+- ⚠️ ReconnectSpectator.tsx component exists but not wired into GameContext.tsx game flow
+- ❌ No performance monitoring or analytics
 
 ## 6. UX/UI Gaps (Observed)
-- No visual feedback for moves, errors, or invalid actions
-- No loading indicators for network requests or game state changes
-- Minimal use of color, animation, or sound for engagement
-- No confirmation dialogs for destructive actions (e.g., restart game)
-- No player avatars, names, or personalization
-- No indication of game rules, win/loss, or next steps after game ends
-- No mobile-specific UI optimizations (beyond basic responsiveness)
-- No dark/light mode toggle (only dark theme by default)
-- No settings/preferences panel
+- ⚠️ Notification.tsx exists but not confirmed wired to move errors in GameBoard.tsx
+- ❌ No loading indicators / spinners for network requests or game state changes
+- ✅ FlyingPieceOverlay.tsx exists for AI move animation
+- ❌ No confirmation dialogs for destructive actions (restart, resign)
+- ❌ No player avatars or names
+- ❌ No win/loss/next steps UI after game ends
+- ⚠️ Basic layout exists but no confirmed @media queries for mobile optimization
+- ❌ No dark/light mode toggle (dark only)
+- ❌ No settings/preferences panel
 
 ---
-This list should be reviewed and prioritized for implementation before production launch. Additions welcome as new issues are discovered.
+Last audited: 2026-03-25. ~14 items done or partial, ~10 items still missing.
+Priority remaining: loading indicators, win/loss UI, dark/light toggle, confirmation dialogs, keyboard nav, mobile CSS, player names, settings, wire reconnect/spectate into game flow.

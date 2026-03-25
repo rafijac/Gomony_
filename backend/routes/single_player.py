@@ -42,7 +42,7 @@ async def reset():
     }
 
 
-@router.post("/move")
+@router.post("/move", status_code=200)
 async def move_endpoint(body: MoveRequest):
     board = _s.state["board"]
     sr, sc = body.start_pos
@@ -50,33 +50,36 @@ async def move_endpoint(body: MoveRequest):
     current_player = _s.state["current_player"]
     pending = _s.state.get("pending_jump")
 
+    def resp(obj):
+        return JSONResponse(content=obj, status_code=200)
+
     if not (0 <= sr < 12 and 0 <= sc < 12 and 0 <= er < 12 and 0 <= ec < 12):
-        return {"valid": False, "reason": "Position out of bounds", "board": board, "current_player": current_player, "pending_jump": pending}
+        return resp({"valid": False, "reason": "Position out of bounds", "board": board, "current_player": current_player, "pending_jump": pending})
 
     start_stack = board[sr][sc]
     if not start_stack:
-        return {"valid": False, "reason": "No stack at start position", "board": board, "current_player": current_player, "pending_jump": pending}
+        return resp({"valid": False, "reason": "No stack at start position", "board": board, "current_player": current_player, "pending_jump": pending})
     moving_piece = start_stack[-1]
 
     if current_player == 1 and moving_piece not in (1, 3):
-        return {"valid": False, "reason": "It's Player 1's turn. You must move your own piece.", "board": board, "current_player": current_player, "pending_jump": pending}
+        return resp({"valid": False, "reason": "It's Player 1's turn. You must move your own piece.", "board": board, "current_player": current_player, "pending_jump": pending})
     if current_player == 2 and moving_piece not in (2, 4):
-        return {"valid": False, "reason": "It's Player 2's turn. You must move your own piece.", "board": board, "current_player": current_player, "pending_jump": pending}
+        return resp({"valid": False, "reason": "It's Player 2's turn. You must move your own piece.", "board": board, "current_player": current_player, "pending_jump": pending})
 
     is_jump = abs(er - sr) == 2
 
     if pending:
         if [sr, sc] != pending:
-            return {"valid": False, "reason": "You must continue jumping with the highlighted piece.", "board": board, "current_player": current_player, "pending_jump": pending}
+            return resp({"valid": False, "reason": "You must continue jumping with the highlighted piece.", "board": board, "current_player": current_player, "pending_jump": pending})
         if not is_jump:
-            return {"valid": False, "reason": "You must continue jumping.", "board": board, "current_player": current_player, "pending_jump": pending}
+            return resp({"valid": False, "reason": "You must continue jumping.", "board": board, "current_player": current_player, "pending_jump": pending})
     else:
         if not is_jump and get_all_jumps(board, current_player):
-            return {"valid": False, "reason": "A jump is available — you must jump.", "board": board, "current_player": current_player, "pending_jump": None}
+            return resp({"valid": False, "reason": "A jump is available — you must jump.", "board": board, "current_player": current_player, "pending_jump": None})
 
     valid, reason, kinged = validate_move(board, (sr, sc), (er, ec))
     if not valid:
-        return {"valid": False, "reason": reason, "board": board, "current_player": current_player, "pending_jump": pending}
+        return resp({"valid": False, "reason": reason, "board": board, "current_player": current_player, "pending_jump": pending})
 
     apply_move(board, sr, sc, er, ec, kinged)
 
@@ -84,12 +87,12 @@ async def move_endpoint(body: MoveRequest):
         more_jumps = get_jumps_from(board, (er, ec))
         if more_jumps:
             _s.state["pending_jump"] = [er, ec]
-            return {"valid": True, "reason": "Jump! Keep jumping.", "board": _s.state["board"], "current_player": _s.state["current_player"], "pending_jump": _s.state["pending_jump"]}
+            return resp({"valid": True, "reason": "Jump! Keep jumping.", "board": _s.state["board"], "current_player": _s.state["current_player"], "pending_jump": _s.state["pending_jump"]})
 
     _s.state["pending_jump"] = None
     _s.state["current_player"] = 2 if current_player == 1 else 1
     _s.state["move_count"] += 1
-    return {"valid": True, "reason": reason, "board": _s.state["board"], "current_player": _s.state["current_player"], "pending_jump": None}
+    return resp({"valid": True, "reason": reason, "board": _s.state["board"], "current_player": _s.state["current_player"], "pending_jump": None})
 
 
 @router.post("/move/pc", tags=["AI"], summary="Make an AI move for the current player")

@@ -1,4 +1,6 @@
 # --- Added from main.py ---
+from board import make_initial_board, apply_move
+
 def run_pc_vs_pc_game(depth=1, max_moves=100):
     board = make_initial_board()
     current_player = 1
@@ -28,7 +30,7 @@ def run_pc_vs_pc_game(depth=1, max_moves=100):
             result = f"Invalid move by AI: {move} | Reason: {reason}"
             winner = 2 if current_player == 1 else 1
             break
-        _apply_move(board, sr, sc, er, ec, kinged)
+        apply_move(board, sr, sc, er, ec, kinged)
         log.append({
             "move_num": move_count + 1,
             "player": current_player,

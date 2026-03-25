@@ -27,3 +27,22 @@ Refactor the backend into a modular structure under src/, separating API routes,
 
 ---
 Plan approved for implementation.
+
+---
+## Migration Checklist (Backend Modularization)
+- [ ] Create src/ directory structure: api/, models/, services/, auth/, utils/
+- [ ] Move endpoints from main.py to src/api/ (grouped by domain)
+- [ ] Move business logic to src/services/
+- [ ] Move Pydantic models/schemas to src/models/
+- [ ] Move helpers to src/utils/
+- [ ] Keep shared logic (e.g., validate_move.py) in shared/
+- [ ] Update main.py to only create app, add middleware, include routers
+- [ ] Update all imports/usages
+- [ ] Update and migrate all tests
+- [ ] Remove obsolete files from root
+- [ ] Update documentation (README, ARCHITECTURE.md)
+- [ ] Validate all tests pass
+- [ ] Manual API checks
+
+---
+Status: In Progress
