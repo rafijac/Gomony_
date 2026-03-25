@@ -1,8 +1,11 @@
 
 import axios from 'axios';
 
+const isProd = typeof window !== 'undefined' && window.location.hostname.endsWith('onrender.com');
 export const api = axios.create({
-  baseURL: 'http://localhost:8001',
+  baseURL: isProd
+    ? 'https://gomony.onrender.com'
+    : 'http://localhost:8001',
 });
 
 // Store session token for manual use (not via header)
