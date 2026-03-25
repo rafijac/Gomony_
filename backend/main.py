@@ -26,6 +26,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "https://gomony-frontend.onrender.com",
+        "https://gomony-bz56.onrender.com",
+        "https://gomony.onrender.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
