@@ -5,7 +5,7 @@ import GameBoard from './components/GameBoard';
 import ModeSelectModal from './components/ModeSelectModal';
 import { setSessionToken } from './api';
 import LobbyModal from './components/LobbyModal';
-import Notification from './components/Notification';
+// import Notification from './components/Notification';
 import ErrorBoundary from './components/ErrorBoundary';
 import HelpModal from './components/HelpModal';
 import Tooltip from './components/Tooltip';
@@ -13,7 +13,7 @@ import './App.css';
 
 // AppContent is separated so it can use the GameContext
 function AppContent() {
-  const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, lastMessage, sessionExpired, gameId } = useGame();
+  const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, gameId } = useGame();
   const [showModeModal, setShowModeModal] = React.useState(true);
   const [showLobby, setShowLobby] = React.useState(false);
   const [showHelp, setShowHelp] = React.useState(false);

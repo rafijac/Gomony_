@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './LobbyModal.css';
 
 interface LobbyModalProps {

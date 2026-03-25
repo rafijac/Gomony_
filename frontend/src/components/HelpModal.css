@@ -1,12 +1,4 @@
-  max-width: 480px;
-  background: #181c24;
-  color: #f0f0f0;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px #000a;
-  padding: 2rem 2.5rem 1.5rem 2.5rem;
-  position: relative;
-  font-size: 1.08rem;
-}
+/* Removed stray max-width: 480px; and moved to .help-modal if needed */
 .help-modal h2 {
   margin-top: 0;
   font-size: 2rem;

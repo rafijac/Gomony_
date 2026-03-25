@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import './GameBoard.css';
 
 // Piece color mapping (same as Stack)
@@ -9,13 +9,24 @@ const pieceColors = {
   4: '#1a0e05',
 };
 
-const LAYER_OFFSET = 15;
+// const LAYER_OFFSET = 15;
 
-export default function FlyingPieceOverlay({ piece, from, to, boardPx, boardRef, duration }) {
-  const overlayRef = useRef(null);
+interface FlyingPieceOverlayProps {
+  piece: number;
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+  boardPx: number;
+  duration: number;
+}
+
+// Allow CSS custom property in style prop
+type CSSCustomProperty = { [key: `--${string}`]: string };
+
+export default function FlyingPieceOverlay({ piece, from, to, boardPx, duration }: FlyingPieceOverlayProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
   // Calculate cell size and positions
   const cellSize = boardPx / 12;
-  const getPos = (cell) => ({
+  const getPos = (cell: { x: number; y: number }) => ({
     x: cell.x * cellSize + cellSize / 2,
     y: cell.y * cellSize + cellSize / 2,
   });
@@ -24,12 +35,13 @@ export default function FlyingPieceOverlay({ piece, from, to, boardPx, boardRef,
   // Animate with CSS transform
   useEffect(() => {
     if (!overlayRef.current) return;
-    overlayRef.current.style.transform = `translate(${fromPos.x}px, ${fromPos.y}px)`;
-    overlayRef.current.style.transition = 'none';
+    const el = overlayRef.current;
+    el.style.transform = `translate(${fromPos.x}px, ${fromPos.y}px)`;
+    el.style.transition = 'none';
     // Force reflow
-    void overlayRef.current.offsetWidth;
-    overlayRef.current.style.transition = `transform ${duration}ms cubic-bezier(0.4,0,0.2,1)`;
-    overlayRef.current.style.transform = `translate(${toPos.x}px, ${toPos.y}px)`;
+    void el.offsetWidth;
+    el.style.transition = `transform ${duration}ms cubic-bezier(0.4,0,0.2,1)`;
+    el.style.transform = `translate(${toPos.x}px, ${toPos.y}px)`;
   }, [fromPos.x, fromPos.y, toPos.x, toPos.y, duration]);
 
   // Piece rendering (same as Stack, but only top disc)
@@ -47,6 +59,26 @@ export default function FlyingPieceOverlay({ piece, from, to, boardPx, boardRef,
     topColor = '#888'; bottomColor = '#444';
   }
 
+  // Allow custom property in style
+  const discBottomStyle: React.CSSProperties & CSSCustomProperty = {
+    '--disc-color': bottomColor,
+    bottom: 2,
+    zIndex: 0,
+    position: 'absolute',
+    width: '96%',
+    left: '2%',
+    height: '48%',
+  };
+  const discTopStyle: React.CSSProperties & CSSCustomProperty = {
+    '--disc-color': topColor,
+    bottom: 13,
+    zIndex: 1,
+    position: 'absolute',
+    width: '82%',
+    left: '9%',
+    height: '52%',
+  };
+
   return (
     <div
       ref={overlayRef}
@@ -59,8 +91,8 @@ export default function FlyingPieceOverlay({ piece, from, to, boardPx, boardRef,
         zIndex: 100,
       }}
     >
-      <div className="disc disc-bottom" style={{ '--disc-color': bottomColor, bottom: 2, zIndex: 0, position: 'absolute', width: '96%', left: '2%', height: '48%' }} />
-      <div className={`disc disc-top${isKing ? ' king' : ''}`} style={{ '--disc-color': topColor, bottom: 13, zIndex: 1, position: 'absolute', width: '82%', left: '9%', height: '52%' }}>
+      <div className="disc disc-bottom" style={discBottomStyle} />
+      <div className={`disc disc-top${isKing ? ' king' : ''}`} style={discTopStyle}>
         {isKing && <span className="king-crown" aria-label="King">♛</span>}
       </div>
     </div>

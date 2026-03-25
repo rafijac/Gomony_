@@ -9,6 +9,8 @@ export const api = axios.create({
 });
 
 // Store session token for manual use (not via header)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+// @ts-ignore: sessionToken is kept for future use
 let sessionToken: string | null = null;
 export function setSessionToken(token: string | null) {
   sessionToken = token;

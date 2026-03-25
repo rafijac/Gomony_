@@ -50,7 +50,7 @@ interface GameContextValue {
   setBoardStateFromAI?: (aiResult: { board?: number[][][]; current_player?: number; pending_jump?: [number, number] | null }) => void;
 }
 
-const GameContext = createContext<GameContextValue>({
+export const GameContext = createContext<GameContextValue>({
   board: initialBoard,
   currentPlayer: 1,
   pendingJump: null,

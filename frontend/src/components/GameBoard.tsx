@@ -4,7 +4,7 @@ import FlyingPieceOverlay from './FlyingPieceOverlay';
 import ReconnectSpectator from './ReconnectSpectator';
 import { useGame } from './GameContext';
 import Stack from './Stack';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import { postAIMove } from '../aiApi';
 // Animation duration for AI piece movement (ms)
 export const AI_MOVE_ANIMATION_DURATION = 1400;
@@ -33,16 +33,15 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
     sessionExpired,
     setSessionExpired,
     setBoardStateFromAI,
-    yourColor,
+    // yourColor, // unused
   } = useGame();
   const [selected, setSelected] = useState<{ x: number; y: number } | null>(null);
-  const [showSessionModal, setShowSessionModal] = useState(false);
+  // const [showSessionModal, setShowSessionModal] = useState(false); // unused
   // For AI move animation
   const [aiMoveAnimating, setAIMoveAnimating] = useState(false);
   const [aiMoveDest, setAIMoveDest] = useState<{ x: number; y: number } | null>(null);
-  const [aiMoveSrc, setAIMoveSrc] = useState<{ x: number; y: number } | null>(null);
   const [flyingPiece, setFlyingPiece] = useState<{ piece: number, from: {x: number, y: number}, to: {x: number, y: number} } | null>(null);
-  const navigate = useNavigate ? useNavigate() : (() => {});
+  // const navigate = useNavigate ? useNavigate() : (() => {}); // unused
 
   // ── Dynamic board sizing ──────────────────────────────────────────────────
   // rotateX(42deg) + perspective(1100px) causes the board's visual bottom to
@@ -127,7 +126,6 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
         // Save src/dest for flying piece
         const from = { x: aiResult.move.start_pos[1], y: aiResult.move.start_pos[0] };
         const to = { x: aiResult.move.end_pos[1], y: aiResult.move.end_pos[0] };
-        setAIMoveSrc(from);
         setAIMoveDest(to);
         setAIMoveAnimating(true);
         // Get the moving piece (top of src stack)
@@ -138,7 +136,6 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
         setFlyingPiece(null);
         setAIMoveAnimating(false);
         setAIMoveDest(null);
-        setAIMoveSrc(null);
         // Now update board state
         if (setBoardStateFromAI) setBoardStateFromAI(aiResult);
       } else {
@@ -337,7 +334,6 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
                   from={flyingPiece.from}
                   to={flyingPiece.to}
                   boardPx={boardPx}
-                  boardRef={document.querySelector('.game-board')}
                   duration={AI_MOVE_ANIMATION_DURATION}
                 />
               )}
