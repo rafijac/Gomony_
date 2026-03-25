@@ -64,7 +64,9 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
     const update = () => {
       const { width, height } = el.getBoundingClientRect();
       if (!width || !height) return;
-      const availH = height - 32; // buffer for near-edge bottom border
+      const topBuf = 48;  // space above board for tall stacks (kings)
+      const botBuf = 80;  // space below for perspective piece overflow at bottom rows
+      const availH = height - topBuf - botBuf;
       const fromH = (availH * P) / (P * cosT + availH * sinT);
       const fromW = width * 0.97;
       setBoardPx(Math.max(200, Math.min(fromH, fromW)));

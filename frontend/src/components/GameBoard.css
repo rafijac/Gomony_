@@ -31,6 +31,7 @@
   50% { opacity: 0.45; }
 }
 /* ─── Board wrapper & perspective ─────────────────────────────── */
+
 .board-perspective-wrapper {
   perspective: 1100px;
   perspective-origin: 50% 0%;
@@ -38,6 +39,7 @@
   justify-content: center;
   width: 100%;
   overflow: visible;
+  padding-top: 48px; /* Matches topBuf in GameBoard.tsx — space for king stacks */
 }
 
 .game-board {
