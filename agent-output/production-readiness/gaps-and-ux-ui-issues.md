@@ -39,11 +39,11 @@ Legend: ✅ Done | ⚠️ Partial | ❌ Not done
 - ✅ Notification.tsx wired to move errors in GameBoard.tsx
 - ✅ Loading indicators / spinners for network requests and game state changes implemented
 - ✅ FlyingPieceOverlay.tsx exists for AI move animation
-- ❌ No confirmation dialogs for destructive actions (restart, resign)
+- ✅ Confirmation dialogs for destructive actions (restart, resign) implemented
 - ❌ No player avatars or names
-- ❌ No win/loss/next steps UI after game ends
+- ✅ Win/loss/next steps UI after game ends implemented
 - ⚠️ Basic layout exists but no confirmed @media queries for mobile optimization
-- ❌ No dark/light mode toggle (dark only)
+- ✅ Dark/light mode toggle implemented
 - ❌ No settings/preferences panel
 
 ---

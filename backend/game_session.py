@@ -18,6 +18,7 @@ class GameSession:
         self.lock = threading.Lock()
         self.session_tokens: Dict[int, str] = {1: create_session_token()}
         self.orientations: Dict[int, str] = {1: "south"}
+        self.end_state = None  # {'outcome': 'win'|'loss'|'draw'|'resign'|'timeout'|'disconnect'|'abandoned'|'simultaneous', 'winner': 1|2|None, 'custom_message': str}
 
     def add_player(self, player_number: int) -> str:
         self.players.append(player_number)
@@ -47,6 +48,8 @@ class GameSession:
             d["player_number"] = player_number
             d["orientation"] = self.orientations.get(player_number)
             d["your_color"] = color_map.get(player_number)
+        if self.completed and self.end_state:
+            d["end_state"] = self.end_state
         return d
 
 

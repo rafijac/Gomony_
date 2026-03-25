@@ -24,18 +24,7 @@ function AppContent() {
   const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, gameId } = useGame();
   const [showModeModal, setShowModeModal] = useState(true);
   const [showLobby, setShowLobby] = useState(false);
-  // Dark/light mode state
-  const [theme, setTheme] = useState(() => {
-    const stored = localStorage.getItem('gomony_theme');
-    if (stored === 'dark' || stored === 'light') return stored;
-    // Default: match system
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('gomony_theme', theme);
-  }, [theme]);
+  // ...existing code...
 
   useEffect(() => {
     setSessionToken(sessionToken || null);
@@ -91,16 +80,7 @@ function AppContent() {
             <span className="gomony-banner-title">GOMONY<sup className="gomony-copyright-sup">©</sup></span>
           </div>
         </div>
-        {/* Dark/Light mode toggle button */}
-        <button
-          className="theme-toggle-btn"
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          style={{ marginLeft: 16, fontSize: '1.5rem', background: 'none', border: 'none', color: theme === 'dark' ? '#ffe082' : '#3a2412', cursor: 'pointer' }}
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        >
-          {theme === 'dark' ? '🌞' : '🌙'}
-        </button>
+        {/* ...existing code... */}
       </div>
       {showModeModal && <ModeSelectModal onSelect={handleSelect} showMultiplayer />}
       {showLobby && <LobbyModal onCreate={handleCreate} onJoin={handleJoin} onCancel={handleCancelLobby} />}

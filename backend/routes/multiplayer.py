@@ -50,7 +50,11 @@ async def game_state(game_id: str):
     if not session:
         return JSONResponse(status_code=404, content={"error": "Game not found"})
     player_number = 1 if 1 in session.players else None
-    return session.to_dict(player_number=player_number)
+    d = session.to_dict(player_number=player_number)
+    # Expose end_state if game is completed
+    if session.completed and session.end_state:
+        d["end_state"] = session.end_state
+    return d
 
 
 @router.post("/game/{game_id}/move")
@@ -116,7 +120,14 @@ async def game_move(game_id: str, body: SessionMoveRequest):
         opp = (2, 4) if body.player == 1 else (1, 3)
         if not any(cell[-1] in opp for row in board for cell in row if cell):
             session.completed = True
+            session.end_state = {
+                "outcome": "win",
+                "winner": body.player,
+                "custom_message": f"Player {body.player} wins by capturing all opponent pieces."
+            }
             logger.info(f"Game {game_id} completed. Winner: Player {body.player}")
+
+        # TODO: Add logic for draw, resign, timeout, disconnect, abandoned, simultaneous end as needed
 
         resp = {"valid": True, "reason": reason}
         resp.update(session.to_dict(body.player))

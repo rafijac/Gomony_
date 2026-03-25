@@ -2,7 +2,7 @@
 ID: 1
 Origin: 1
 UUID: 7e3a2b1c
-Status: Active
+Status: Committed
 ---
 # Advanced UX/UI Improvements for Gomony Frontend
 
