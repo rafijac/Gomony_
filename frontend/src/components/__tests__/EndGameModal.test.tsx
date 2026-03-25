@@ -1,9 +1,8 @@
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import EndGameModal from '../EndGameModal';
-
-// Use Vitest's vi.fn instead of jest.fn
-const vi = (global as any).vi || require('vitest').vi;
+import { vi } from 'vitest';
 
 describe('EndGameModal', () => {
   const player = {
@@ -34,9 +33,9 @@ describe('EndGameModal', () => {
         onExit={undefined}
       />
     );
-    expect(screen.getByText('You win!')).toBeTruthy();
-    expect(screen.getByText('Alice')).toBeTruthy();
-    expect(screen.getByText('Bob')).toBeTruthy();
+    expect(!!screen.getByText('You win!')).toBe(true);
+    expect(!!screen.getByText('Alice')).toBe(true);
+    expect(!!screen.getByText('Bob')).toBe(true);
     fireEvent.click(screen.getByText('Rematch'));
     expect(onRematch).toHaveBeenCalled();
     fireEvent.click(screen.getByText('Return to Lobby'));

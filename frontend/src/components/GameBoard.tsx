@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import ConfirmModal from './ConfirmModal';
 import FlyingPieceOverlay from './FlyingPieceOverlay';
 import ReconnectSpectator from './ReconnectSpectator';
 import { useGame } from './GameContext';
@@ -37,6 +38,7 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
   } = useGame();
   const [selected, setSelected] = useState<{ x: number; y: number } | null>(null);
   // const [showSessionModal, setShowSessionModal] = useState(false); // unused
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   // For AI move animation
   const [aiMoveAnimating, setAIMoveAnimating] = useState(false);
   const [aiMoveDest, setAIMoveDest] = useState<{ x: number; y: number } | null>(null);
@@ -366,7 +368,7 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
           <Tooltip content="Restart the game from the initial state." ariaLabel="restart">
             <button
               className="restart-btn"
-              onClick={resetGame}
+              onClick={() => setShowRestartConfirm(true)}
               disabled={isThinking}
             >
               Restart Game
@@ -375,12 +377,21 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
         ) : (
           <button
             className="restart-btn"
-            onClick={resetGame}
+            onClick={() => setShowRestartConfirm(true)}
             disabled={isThinking}
           >
             Restart Game
           </button>
         )}
+        <ConfirmModal
+          open={showRestartConfirm}
+          title="Restart Game?"
+          message="Are you sure you want to restart the game? This will reset the board and erase all progress."
+          confirmLabel="Restart"
+          cancelLabel="Cancel"
+          onConfirm={() => { setShowRestartConfirm(false); resetGame(); }}
+          onCancel={() => setShowRestartConfirm(false)}
+        />
         {lastMessage && (
           <div className="status-message" style={/unauthorized/i.test(lastMessage) ? { color: '#ff4d4f', fontWeight: 'bold' } : {}}>
             {lastMessage}

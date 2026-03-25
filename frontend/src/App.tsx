@@ -131,7 +131,7 @@ import './App.css';
       </footer>
     </div>
   );
-}
+// ...existing code...
 
 export default function App() {
   return (
