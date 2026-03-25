@@ -8,7 +8,8 @@ import Stack from './Stack';
 // import { useNavigate } from 'react-router-dom';
 import { postAIMove } from '../aiApi';
 // Animation duration for AI piece movement (ms)
-export const AI_MOVE_ANIMATION_DURATION = 1400;
+export const AI_MOVE_ANIMATION_DURATION = 900; // ms, easy to tune
+export const AI_MULTI_JUMP_DELAY = 200; // ms between jumps
 //
 
 import './GameBoard.css';
@@ -41,8 +42,10 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   // For AI move animation
   const [aiMoveAnimating, setAIMoveAnimating] = useState(false);
+  const [aiMultiJumpStep, setAIMultiJumpStep] = useState(0); // which jump in sequence
   const [aiMoveDest, setAIMoveDest] = useState<{ x: number; y: number } | null>(null);
   const [flyingPiece, setFlyingPiece] = useState<{ piece: number, from: {x: number, y: number}, to: {x: number, y: number} } | null>(null);
+  const [aiMultiJumpAnimating, setAIMultiJumpAnimating] = useState(false); // for testability
   // const navigate = useNavigate ? useNavigate() : (() => {}); // unused
 
   // ── Dynamic board sizing ──────────────────────────────────────────────────
@@ -122,25 +125,53 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
   };
 
   // Animate the AI move: fetch move, update board, then highlight destination
+  // Animate a multi-jump AI move (moves array)
   const animateAIMove = async () => {
     setIsThinking(true);
+    setAIMoveAnimating(true);
+    setAIMultiJumpAnimating(false);
+    setAIMultiJumpStep(0);
     try {
       const aiResult = await postAIMove();
-      if (aiResult && aiResult.move) {
-        // Save src/dest for flying piece
+      // Multi-jump: moves array
+      const moves = aiResult?.moves;
+      if (Array.isArray(moves) && moves.length > 1) {
+        setAIMultiJumpAnimating(true);
+        for (let i = 0; i < moves.length; ++i) {
+          setAIMultiJumpStep(i);
+          const move = moves[i];
+          const from = { x: move.start_pos[1], y: move.start_pos[0] };
+          const to = { x: move.end_pos[1], y: move.end_pos[0] };
+          setAIMoveDest(to);
+          // Defensive: get moving piece from current board
+          const movingPiece = board[from.y][from.x][board[from.y][from.x].length - 1] ?? 2;
+          setFlyingPiece({ piece: movingPiece, from, to });
+          // Wait for animation
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(res => setTimeout(res, AI_MOVE_ANIMATION_DURATION));
+          setFlyingPiece(null);
+          setAIMoveDest(null);
+          // Small delay between jumps
+          // eslint-disable-next-line no-await-in-loop
+          if (i < moves.length - 1) await new Promise(res => setTimeout(res, AI_MULTI_JUMP_DELAY));
+        }
+        setAIMultiJumpAnimating(false);
+        setAIMoveAnimating(false);
+        setAIMultiJumpStep(0);
+        // After all jumps, update board state
+        if (setBoardStateFromAI) setBoardStateFromAI(aiResult);
+      } else if (aiResult && aiResult.move) {
+        // Single move fallback
         const from = { x: aiResult.move.start_pos[1], y: aiResult.move.start_pos[0] };
         const to = { x: aiResult.move.end_pos[1], y: aiResult.move.end_pos[0] };
         setAIMoveDest(to);
         setAIMoveAnimating(true);
-        // Get the moving piece (top of src stack)
-        const movingPiece = board[from.y][from.x][board[from.y][from.x].length - 1];
+        const movingPiece = board[from.y][from.x][board[from.y][from.x].length - 1] ?? 2;
         setFlyingPiece({ piece: movingPiece, from, to });
-        // Wait for animation
         await new Promise(res => setTimeout(res, AI_MOVE_ANIMATION_DURATION));
         setFlyingPiece(null);
         setAIMoveAnimating(false);
         setAIMoveDest(null);
-        // Now update board state
         if (setBoardStateFromAI) setBoardStateFromAI(aiResult);
       } else {
         // fallback: just update board
@@ -150,6 +181,9 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
       // silent fail
     } finally {
       setIsThinking(false);
+      setAIMoveAnimating(false);
+      setAIMultiJumpAnimating(false);
+      setAIMultiJumpStep(0);
     }
   };
 
@@ -212,7 +246,10 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
   const showSpectator = gameMode === 'MP' && playerNumber == null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', flex: 1, minHeight: 0, minWidth: 0, width: '100%', height: '100%', overflow: 'hidden', alignItems: 'stretch' }}>
+    <div
+      style={{ display: 'flex', flexDirection: 'row', flex: 1, minHeight: 0, minWidth: 0, width: '100%', height: '100%', overflow: 'hidden', alignItems: 'stretch' }}
+      data-testid={aiMultiJumpAnimating ? 'ai-multijump-animating' : undefined}
+    >
       {(showReconnect || showSpectator) && (
         <div className="session-expired-modal">
           <div className="modal-content">
@@ -269,12 +306,12 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
                             data-row={y}
                             data-col={x}
                             data-animating={animating ? 'true' : undefined}
-                            draggable={stack.length > 0 && !isThinking && !aiMoveAnimating}
+                            draggable={stack.length > 0 && !isThinking && !aiMoveAnimating && !aiMultiJumpAnimating}
                             onDragStart={handleDragStart(x, y)}
                             onClick={() => handleCellClick(x, y)}
                             onDragOver={e => e.preventDefault()}
                             onDrop={handleDrop(x, y)}
-                            style={isThinking || aiMoveAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
+                            style={isThinking || aiMoveAnimating || aiMultiJumpAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
                           >
                             <Stack stack={stack} animating={animating} />
                           </div>
@@ -287,12 +324,12 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
                           data-row={y}
                           data-col={x}
                           data-animating={animating ? 'true' : undefined}
-                          draggable={stack.length > 0 && !isThinking && !aiMoveAnimating}
+                          draggable={stack.length > 0 && !isThinking && !aiMoveAnimating && !aiMultiJumpAnimating}
                           onDragStart={handleDragStart(x, y)}
                           onClick={() => handleCellClick(x, y)}
                           onDragOver={e => e.preventDefault()}
                           onDrop={handleDrop(x, y)}
-                          style={isThinking || aiMoveAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
+                          style={isThinking || aiMoveAnimating || aiMultiJumpAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
                         >
                           <Stack stack={stack} animating={animating} />
                         </div>
