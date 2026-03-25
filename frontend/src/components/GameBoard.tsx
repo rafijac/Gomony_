@@ -65,7 +65,7 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
       const { width, height } = el.getBoundingClientRect();
       if (!width || !height) return;
       const topBuf = 48;  // space above board for tall stacks (kings)
-      const botBuf = 80;  // space below for perspective piece overflow at bottom rows
+      const botBuf = 140;  // space below: perspective overflow (~80px) + visible padding (~60px)
       const availH = height - topBuf - botBuf;
       const fromH = (availH * P) / (P * cosT + availH * sinT);
       const fromW = width * 0.97;
@@ -231,7 +231,7 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
       {/* ── Center: board only ── */}
       <div
         ref={boardAreaRef}
-        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden' }}
+        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', overflow: 'visible' }}
       >
         {Tooltip ? (
           <Tooltip content={"The board: Only dark squares are playable. Move your stack by clicking or dragging. Kings can move in all directions."} ariaLabel="game board">
