@@ -1,11 +1,17 @@
 
 import axios from 'axios';
 
-const isProd = typeof window !== 'undefined' && window.location.hostname.endsWith('onrender.com');
+const getBaseURL = () => {
+  // VITE_API_URL is injected at build time from the environment
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined' && window.location.hostname.endsWith('onrender.com')) {
+    return 'https://gomony-backend.onrender.com';
+  }
+  return 'http://localhost:8001';
+};
+
 export const api = axios.create({
-  baseURL: isProd
-    ? 'https://gomony.onrender.com'
-    : 'http://localhost:8001',
+  baseURL: getBaseURL(),
 });
 
 // Store session token for manual use (not via header)
