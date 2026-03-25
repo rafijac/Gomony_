@@ -1,17 +1,26 @@
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GameProvider, useGame } from './components/GameContext';
 import GameBoard from './components/GameBoard';
 import ModeSelectModal from './components/ModeSelectModal';
 import { setSessionToken } from './api';
 import LobbyModal from './components/LobbyModal';
-// import Notification from './components/Notification';
 import ErrorBoundary from './components/ErrorBoundary';
-// import HelpModal from './components/HelpModal';
-// import Tooltip from './components/Tooltip';
 import './App.css';
 
-// AppContent is separated so it can use the GameContext
+function App() {
+  return (
+    <GameProvider>
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
+    </GameProvider>
+  );
+}
+
+export default App;
+
+function AppContent() {
   const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, gameId } = useGame();
   const [showModeModal, setShowModeModal] = useState(true);
   const [showLobby, setShowLobby] = useState(false);
@@ -27,25 +36,11 @@ import './App.css';
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('gomony_theme', theme);
   }, [theme]);
-  // const [showHelp, setShowHelp] = React.useState(false);
-  // const [onboarded, setOnboarded] = React.useState(() => localStorage.getItem('gomony_onboarded') === '1');
 
-  // Propagate session token to API module
   useEffect(() => {
     setSessionToken(sessionToken || null);
   }, [sessionToken]);
 
-  // Show onboarding overlay for first-time users
-  // useEffect(() => {
-  //   if (!onboarded && !showModeModal && !showLobby) {
-  //     // Show onboarding overlay
-  //     setShowHelp(true);
-  //     localStorage.setItem('gomony_onboarded', '1');
-  //     setOnboarded(true);
-  //   }
-  // }, [onboarded, showModeModal, showLobby]);
-
-  // Show mode selection modal at game start
   const handleSelect = (mode: '2P' | 'PC' | 'MP') => {
     if (mode === 'MP') {
       setShowLobby(true);
@@ -57,7 +52,6 @@ import './App.css';
     }
   };
 
-  // Multiplayer lobby handlers
   const handleCreate = (gameId: string, sessionToken: string, playerNumber: number, orientation: 'south' | 'north') => {
     setMultiplayerSession({ gameId, sessionToken, playerNumber, orientation });
     setShowLobby(false);
@@ -73,7 +67,6 @@ import './App.css';
     setShowModeModal(true);
   };
 
-  // Handler for clicking the Gomony icon to return to lobby
   const handleGomonyClick = () => {
     setShowModeModal(true);
     setShowLobby(false);
@@ -118,7 +111,7 @@ import './App.css';
               Share this game code: <span style={{ fontFamily: 'monospace', fontSize: '1.2em' }}>{gameId}</span>
             </div>
           )}
-          <GameBoard Tooltip={Tooltip} />
+          <GameBoard />
         </>
       )}
       {/* HelpModal removed */}
@@ -130,15 +123,5 @@ import './App.css';
         <span>COPYRIGHT 1979 &nbsp; Harvey S. Klein &nbsp; Patent Pending</span>
       </footer>
     </div>
-  );
-// ...existing code...
-
-export default function App() {
-  return (
-    <GameProvider>
-      <ErrorBoundary>
-        <AppContent />
-      </ErrorBoundary>
-    </GameProvider>
   );
 }
