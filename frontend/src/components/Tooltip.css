@@ -19,6 +19,7 @@
   pointer-events: auto;
 }
 
+/* Dismiss button for tooltip */
 .tooltip-dismiss-btn {
   background: none;
   border: none;
@@ -31,10 +32,28 @@
   border-radius: 3px;
   transition: background 0.15s;
   align-self: flex-start;
-}
-.tooltip-dismiss-btn:hover, .tooltip-dismiss-btn:focus {
-  background: #333a;
   outline: none;
+}
+.tooltip-dismiss-btn:focus {
+  background: #333a;
+  outline: 2px solid #ffe082;
+  outline-offset: 1px;
+}
+.tooltip-dismiss-btn:hover {
+  background: #333a;
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .tooltip-top {
   /* Default: above */

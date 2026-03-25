@@ -241,15 +241,23 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
                     const animating = isAIMoveDest(x, y);
                     return (
                       Tooltip ? (
-                        <Tooltip key={`${x}-${y}`}
+                        <Tooltip
+                          key={`${x}-${y}`}
                           content={
                             stack.length > 0
                               ? isPending
                                 ? 'This stack must jump again!'
-                                : 'Click or drag to move this stack.'
+                                : <>
+                                    Click or drag to move this stack.
+                                    <br />
+                                    <span style={{ fontSize: '0.93em', color: '#ffe082', display: 'block', marginTop: 2 }}>
+                                      <strong>Tip:</strong> You can dismiss this tooltip with the button.
+                                    </span>
+                                  </>
                               : 'Empty square. Only dark squares are playable.'
                           }
                           ariaLabel={stack.length > 0 ? 'stack' : 'empty square'}
+                          dismissKey={stack.length > 0 && !isPending ? 'gomony_tooltip_dismissed_v1' : undefined}
                         >
                           <div
                             className={`cell${isSelected ? ' selected' : ''}${isPending ? ' pending-jump' : ''}${animating ? ' ai-animating' : ''}`}

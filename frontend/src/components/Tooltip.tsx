@@ -2,12 +2,18 @@
 import React from 'react';
 import './Tooltip.css';
 
+/**
+ * TooltipProps
+ * @param dismissKey If provided, makes the tooltip dismissible. The tooltip will not reappear if localStorage.getItem('tooltip_dismissed_' + dismissKey) === '1'.
+ *                  Use a versioned key (e.g., 'gomony_tooltip_dismissed_v1') to allow future content changes to reset dismissal.
+ * @param disableAfterFirstUse If true, disables tooltip after first display (one-time tip).
+ */
 interface TooltipProps {
   children: React.ReactNode;
   content: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
   ariaLabel?: string;
-  dismissKey?: string; // unique key for localStorage to persist dismissal
+  dismissKey?: string; // unique versioned key for localStorage to persist dismissal
   disableAfterFirstUse?: boolean; // disables tooltip after first display
 }
 
@@ -61,12 +67,14 @@ export default function Tooltip({ children, content, position = 'top', ariaLabel
           {dismissKey && (
             <button
               className="tooltip-dismiss-btn"
-              aria-label="Dismiss tooltip"
+              aria-label="Don't show this tooltip again"
               onClick={handleDismiss}
               tabIndex={0}
               type="button"
+              title="Don't show this tooltip again"
+              autoFocus={false}
             >
-              ×
+              × <span className="sr-only">Don't show again</span>
             </button>
           )}
         </span>

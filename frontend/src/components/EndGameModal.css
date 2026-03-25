@@ -1,0 +1,68 @@
+.endgame-modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.endgame-modal {
+  background: #222;
+  color: #fff;
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  min-width: 340px;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  text-align: center;
+}
+.endgame-players {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1.5rem 0 1rem 0;
+}
+.player-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 1.5rem;
+}
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  margin-bottom: 0.5rem;
+}
+.vs {
+  font-size: 1.2rem;
+  color: #aaa;
+  margin: 0 1rem;
+}
+.endgame-custom-message {
+  margin: 1rem 0;
+  font-size: 1.1rem;
+  color: #ffd700;
+}
+.endgame-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.endgame-actions button {
+  background: #444;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.endgame-actions button:hover {
+  background: #666;
+}

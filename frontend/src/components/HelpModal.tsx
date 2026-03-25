@@ -1,4 +1,3 @@
-// ...existing code...
 import './HelpModal.css';
 
 interface HelpModalProps {
