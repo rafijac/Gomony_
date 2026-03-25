@@ -250,40 +250,33 @@ def test_valid_move_updates_board():
 
 def test_move_validates_capture_logic():
     """
-    validate_move (unit test) correctly identifies a capture move.
-
-    The server now owns board state, so we test the capture logic at the
-    function level rather than injecting a custom board via the API.
+    validate_move (unit test) correctly identifies a jump (capture) move.
     """
     from shared.validate_move import validate_move
     board = [[[] for _ in range(12)] for _ in range(12)]
-    board[0][0] = [1]   # player 1
-    board[0][1] = [2]   # player 2 — adjacent, one step right
-    valid, reason = validate_move(board, (0, 0), (0, 1))
+    board[2][0] = [1]   # player 1 at (2,0)
+    board[3][1] = [2]   # player 2 at (3,1) — diagonal, to be jumped over
+    # Player 1 jumps over player 2 from (2,0) to (4,2)
+    valid, reason, kinged = validate_move(board, (2, 0), (4, 2))
     assert valid is True
-    assert reason == "Valid capture"
+    assert reason == "Valid jump"
 
 
-def test_move_endpoint_stack_merge():
+def test_move_endpoint_valid_normal_move():
     """
-    POST /move on the initial board merges two adjacent player-1 stacks.
-
-    After a reset:
-      (0,1): dark square (0+1=1, odd), row 0 < 4 → player-1 piece
-      (1,0): dark square (1+0=1, odd), row 1 < 4 → player-1 piece
-    Moving from (0,1) to (1,0) merges both player-1 stacks.
+    POST /move on the initial board: player 1 makes a valid diagonal move.
     """
-    client.post("/reset")   # start from known initial board
-
+    client.post("/reset")
+    # (3,0) has player-1 piece; (4,1) is empty at game start
     payload = {
-        "start_pos": [0, 1],
-        "end_pos": [1, 0],
+        "start_pos": [3, 0],
+        "end_pos": [4, 1],
     }
     response = client.post("/move", json=payload)
     assert response.status_code == 200
     data = response.json()
     assert data["valid"] is True
-    assert data["reason"] == "Valid stack merge"
+    assert data["reason"] == "Valid move to empty cell"
 
 
 def test_move_endpoint_out_of_bounds():
@@ -304,11 +297,11 @@ def test_move_endpoint_out_of_bounds():
 
 def test_move_endpoint_no_piece_at_start():
     """POST /move rejects moves from an empty cell."""
-    board = [[[] for _ in range(12)] for _ in range(12)]
+    client.post("/reset")
+    # (4,1) is empty at game start (mid-board, no pieces)
     payload = {
-        "current_state": board,
-        "start_pos": [0, 1],
-        "end_pos": [1, 0],
+        "start_pos": [4, 1],
+        "end_pos": [5, 2],
     }
     response = client.post("/move", json=payload)
     assert response.status_code == 200
