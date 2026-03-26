@@ -15,9 +15,20 @@ logger = logging.getLogger("gomony")
 
 
 @router.post("/game/create")
-async def create_game():
+async def create_game(request: Request):
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+    display_name = data.get("display_name") if data else None
+    avatar_url = data.get("avatar_url") if data else None
     game_id = str(uuid.uuid4())[:8]
     session = GameSession(game_id)
+    # Set player 1 info if provided
+    session.player_info[1] = {
+        "display_name": display_name or "Player 1",
+        "avatar_url": avatar_url or "/assets/avatars/avatar1.png"
+    }
     sessions[game_id] = session
     logger.info(f"Game created: {game_id}")
     d = session.to_dict(player_number=1)
@@ -27,8 +38,12 @@ async def create_game():
 
 
 @router.post("/game/join")
-async def join_game(body: JoinGameRequest):
-    session = sessions.get(body.game_id)
+async def join_game(request: Request):
+    data = await request.json()
+    game_id = data.get("game_id")
+    display_name = data.get("display_name")
+    avatar_url = data.get("avatar_url")
+    session = sessions.get(game_id)
     if not session:
         return JSONResponse(status_code=404, content={"error": "Game not found"})
     with session.lock:
@@ -36,8 +51,8 @@ async def join_game(body: JoinGameRequest):
             return JSONResponse(status_code=410, content={"error": "Game is completed or abandoned"})
         if len(session.players) >= 2:
             return JSONResponse(status_code=409, content={"error": "Game is full"})
-        token = session.add_player(2)
-        logger.info(f"Player 2 joined game: {body.game_id}")
+        token = session.add_player(2, display_name=display_name, avatar_url=avatar_url)
+        logger.info(f"Player 2 joined game: {game_id}")
     d = session.to_dict(player_number=2)
     d["player"] = 2
     d["session_token"] = token

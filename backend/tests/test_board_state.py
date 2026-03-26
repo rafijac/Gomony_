@@ -18,6 +18,52 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TDD: End-state API contract and triggers
+# ─────────────────────────────────────────────────────────────────────────────
+def test_end_state_api_contract():
+    """After a win, draw, resign, timeout, disconnect, forfeit, or abandon, /state and /move must include end-state fields."""
+    client = TestClient(app)
+    # Simulate a win by removing all player 2 pieces
+    client.post("/reset")
+    # Remove all player 2 pieces
+    state = client.get("/state").json()
+    board = state["board"]
+    for row in board:
+        for cell in row:
+            if cell and cell[-1] == 2:
+                cell.clear()
+    # Force update
+    client.post("/reset")  # Reset again to ensure state
+    # Simulate a move that should trigger win
+    payload = {"start_pos": [3, 0], "end_pos": [4, 1]}
+    move_resp = client.post("/move", json=payload)
+    data = move_resp.json()
+    # The response must include the new end-state fields
+    assert "game_over" in data, "Missing game_over field in response"
+    assert "end_reason" in data, "Missing end_reason field in response"
+    assert "winner" in data, "Missing winner field in response"
+    assert "loser" in data, "Missing loser field in response"
+    assert "winning_move" in data, "Missing winning_move field in response"
+    assert "end_time" in data, "Missing end_time field in response"
+    assert "final_board" in data, "Missing final_board field in response"
+    # The game_over field must be True
+    assert data["game_over"] is True, "game_over should be True after win"
+    # The end_reason must be 'win'
+    assert data["end_reason"] == "win", f"end_reason should be 'win', got {data['end_reason']}"
+    # Winner must be player 1 (since only player 1 pieces remain)
+    assert data["winner"] == 1, f"winner should be 1, got {data['winner']}"
+    # Loser must be player 2
+    assert data["loser"] == 2, f"loser should be 2, got {data['loser']}"
+    # End time must be a string (timestamp)
+    assert isinstance(data["end_time"], str), "end_time should be a string timestamp"
+    # Final board must be a 12x12 array
+    assert isinstance(data["final_board"], list) and len(data["final_board"]) == 12, "final_board should be a 12x12 array"
+    # Winning move must be present and a dict
+    assert isinstance(data["winning_move"], dict) or data["winning_move"] is None, "winning_move should be a dict or None"
+    # TODO: Repeat for draw, resign, timeout, disconnect, forfeit, abandon triggers (requires backend support)
+
 client = TestClient(app)
 
 

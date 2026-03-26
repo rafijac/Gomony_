@@ -17,4 +17,12 @@ describe('AvatarSelector', () => {
     fireEvent.click(imgs[2]);
     expect(handleChange).toHaveBeenCalledWith(AVATAR_PRESETS[2]);
   });
+
+  it('disables avatar selection after game start (should fail until implemented)', () => {
+    render(<AvatarSelector value={AVATAR_PRESETS[0]} onChange={() => {}} editingLocked={true} />);
+    const imgs = screen.getAllByAltText('Avatar');
+    imgs.forEach(img => {
+      expect(img).toHaveAttribute('aria-disabled', 'true');
+    });
+  });
 });

@@ -10,17 +10,17 @@ describe('PreferencesPanel', () => {
       <PreferencesPanel open={true} onClose={onClose} userRole="spectator" />
     );
     // Example: sound toggle should be disabled
-    expect(screen.getByLabelText('Sound')).toBeDisabled();
+    expect(screen.getByLabelText('Sound').disabled).toBe(true);
     // Example: board orientation should be disabled
-    expect(screen.getByLabelText('Board Orientation')).toBeDisabled();
+    expect(screen.getByLabelText('Board Orientation').disabled).toBe(true);
   });
 
   it('enables controls for players', () => {
     render(
       <PreferencesPanel open={true} onClose={onClose} userRole="player" />
     );
-    expect(screen.getByLabelText('Sound')).not.toBeDisabled();
-    expect(screen.getByLabelText('Board Orientation')).not.toBeDisabled();
+    expect(screen.getByLabelText('Sound').disabled).toBe(false);
+    expect(screen.getByLabelText('Board Orientation').disabled).toBe(false);
   });
 
   it('persists preferences in localStorage', () => {
@@ -37,5 +37,14 @@ describe('PreferencesPanel', () => {
       <PreferencesPanel open={true} onClose={onClose} userRole="spectator" />
     );
     expect(screen.getByText(/Spectate mode/)).toBeTruthy();
+  });
+
+  it('locks avatar/name editing after game start (should fail until implemented)', () => {
+    render(
+      <PreferencesPanel open={true} onClose={onClose} userRole="player" editingLocked={true} />
+    );
+    // Avatar selector and name input should be disabled
+    expect(screen.getByLabelText('Avatar').closest('button')).toBeDisabled();
+    expect(screen.getByLabelText('Display Name')).toBeDisabled();
   });
 });

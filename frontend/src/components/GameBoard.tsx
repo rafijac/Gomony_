@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ConfirmModal from './ConfirmModal';
 import FlyingPieceOverlay from './FlyingPieceOverlay';
 import ReconnectSpectator from './ReconnectSpectator';
@@ -13,6 +13,17 @@ export const AI_MULTI_JUMP_DELAY = 200; // ms between jumps
 //
 
 import './GameBoard.css';
+
+// Keyboard navigation helpers
+const getNextCell = (x: number, y: number, key: string): [number, number] => {
+  switch (key) {
+    case 'ArrowUp': return [x, Math.max(0, y - 1)];
+    case 'ArrowDown': return [x, Math.min(11, y + 1)];
+    case 'ArrowLeft': return [Math.max(0, x - 1), y];
+    case 'ArrowRight': return [Math.min(11, x + 1), y];
+    default: return [x, y];
+  }
+};
 
 
 /**
@@ -38,6 +49,10 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
     // yourColor, // unused
   } = useGame();
   const [selected, setSelected] = useState<{ x: number; y: number } | null>(null);
+  // For keyboard navigation: track focused cell
+  const [focusedCell, setFocusedCell] = useState<{ x: number; y: number } | null>(null);
+  // Ref to all cell elements for focus management
+  const cellRefs = useRef<(HTMLDivElement | null)[][]>([]);
   // const [showSessionModal, setShowSessionModal] = useState(false); // unused
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   // For AI move animation
@@ -74,11 +89,34 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
       const fromW = width * 0.97;
       setBoardPx(Math.max(200, Math.min(fromH, fromW)));
     };
-    const ro = new ResizeObserver(update);
+    // @ts-ignore
+    const ro = new (window.ResizeObserver || (globalThis as any).ResizeObserver)(update);
     ro.observe(el);
     update();
     return () => ro.disconnect();
   }, []);
+
+  // Keyboard navigation: move focus with arrow keys
+  const handleBoardKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!focusedCell) return;
+    let { x, y } = focusedCell;
+    if (e.key === 'ArrowRight') {
+      x = (x + 1) % 12;
+    } else if (e.key === 'ArrowLeft') {
+      x = (x + 11) % 12;
+    } else if (e.key === 'ArrowDown') {
+      y = (y + 1) % 12;
+    } else if (e.key === 'ArrowUp') {
+      y = (y + 11) % 12;
+    } else {
+      return;
+    }
+    e.preventDefault();
+    setFocusedCell({ x, y });
+    // Focus the new cell
+    const ref = cellRefs.current[y]?.[x];
+    if (ref) ref.focus();
+  }, [focusedCell]);
 
   // Returns true if the cell at (x, y) is the mandatory piece to move during multi-jump
   const isPendingCell = (x: number, y: number) =>
@@ -245,6 +283,30 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
   const showReconnect = sessionExpired;
   const showSpectator = gameMode === 'MP' && playerNumber == null;
 
+  // Focus management for board cells
+  const cellRefs = useRef<(HTMLDivElement | null)[][]>(Array.from({ length: 12 }, () => Array(12).fill(null)));
+  const [focusCell, setFocusCell] = useState<{ x: number; y: number } | null>(null);
+
+  // Keyboard handler for board navigation
+  const handleCellKeyDown = (x: number, y: number) => (e: React.KeyboardEvent) => {
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+      e.preventDefault();
+      const [nx, ny] = getNextCell(x, y, e.key);
+      const next = cellRefs.current[ny]?.[nx];
+      if (next) {
+        next.focus();
+        setFocusCell({ x: nx, y: ny });
+      }
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleCellClick(x, y);
+    }
+  };
+
+  // Initialize cellRefs on each render
+  cellRefs.current = Array.from({ length: 12 }, () => Array(12).fill(null));
+
+  // Always render ARIA roles for accessibility, regardless of Tooltip
   return (
     <div
       style={{ display: 'flex', flexDirection: 'row', flex: 1, minHeight: 0, minWidth: 0, width: '100%', height: '100%', overflow: 'hidden', alignItems: 'stretch' }}
@@ -270,125 +332,93 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
         ref={boardAreaRef}
         style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', overflow: 'visible' }}
       >
-        {Tooltip ? (
-          <Tooltip content={"The board: Only dark squares are playable. Move your stack by clicking or dragging. Kings can move in all directions."} ariaLabel="game board">
-            <div className="board-perspective-wrapper">
-              <div className="game-board" style={{ width: boardPx, height: boardPx }}>
-                {displayBoard.map((row, yIdx) =>
-                  row.map((stack, x) => {
-                    const y = isFlipped ? 11 - yIdx : yIdx;
-                    const isSelected = selected?.x === x && selected?.y === y;
-                    const isPending = isPendingCell(x, y);
-                    const animating = isAIMoveDest(x, y);
-                    return (
-                      Tooltip ? (
-                        <Tooltip
-                          key={`${x}-${y}`}
-                          content={
-                            stack.length > 0
-                              ? isPending
-                                ? 'This stack must jump again!'
-                                : <>
-                                    Click or drag to move this stack.
-                                    <br />
-                                    <span style={{ fontSize: '0.93em', color: '#ffe082', display: 'block', marginTop: 2 }}>
-                                      <strong>Tip:</strong> You can dismiss this tooltip with the button.
-                                    </span>
-                                  </>
-                              : 'Empty square. Only dark squares are playable.'
-                          }
-                          ariaLabel={stack.length > 0 ? 'stack' : 'empty square'}
-                          dismissKey={stack.length > 0 && !isPending ? 'gomony_tooltip_dismissed_v1' : undefined}
-                        >
-                          <div
-                            className={`cell${isSelected ? ' selected' : ''}${isPending ? ' pending-jump' : ''}${animating ? ' ai-animating' : ''}`}
-                            data-light={(x + y) % 2 === 0 ? 'true' : 'false'}
-                            data-row={y}
-                            data-col={x}
-                            data-animating={animating ? 'true' : undefined}
-                            draggable={stack.length > 0 && !isThinking && !aiMoveAnimating && !aiMultiJumpAnimating}
-                            onDragStart={handleDragStart(x, y)}
-                            onClick={() => handleCellClick(x, y)}
-                            onDragOver={e => e.preventDefault()}
-                            onDrop={handleDrop(x, y)}
-                            style={isThinking || aiMoveAnimating || aiMultiJumpAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
-                          >
-                            <Stack stack={stack} animating={animating} />
-                          </div>
-                        </Tooltip>
-                      ) : (
-                        <div
-                          key={`${x}-${y}`}
-                          className={`cell${isSelected ? ' selected' : ''}${isPending ? ' pending-jump' : ''}${animating ? ' ai-animating' : ''}`}
-                          data-light={(x + y) % 2 === 0 ? 'true' : 'false'}
-                          data-row={y}
-                          data-col={x}
-                          data-animating={animating ? 'true' : undefined}
-                          draggable={stack.length > 0 && !isThinking && !aiMoveAnimating && !aiMultiJumpAnimating}
-                          onDragStart={handleDragStart(x, y)}
-                          onClick={() => handleCellClick(x, y)}
-                          onDragOver={e => e.preventDefault()}
-                          onDrop={handleDrop(x, y)}
-                          style={isThinking || aiMoveAnimating || aiMultiJumpAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
-                        >
-                          <Stack stack={stack} animating={animating} />
-                        </div>
-                      )
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </Tooltip>
-        ) : (
-          <div className="board-perspective-wrapper">
-            <div className="game-board" style={{ width: boardPx, height: boardPx }}>
-              {displayBoard.map((row, yIdx) =>
-                row.map((stack, x) => {
-                  const y = isFlipped ? 11 - yIdx : yIdx;
-                  const isSelected = selected?.x === x && selected?.y === y;
-                  const isPending = isPendingCell(x, y);
-                  const animating = isAIMoveDest(x, y);
-                  // Hide top piece in src/dest during flying animation
-                  let stackToShow = stack;
-                  if (aiMoveAnimating && flyingPiece) {
-                    if ((flyingPiece.from.x === x && flyingPiece.from.y === y) || (flyingPiece.to.x === x && flyingPiece.to.y === y)) {
-                      stackToShow = stack.slice(0, -1);
-                    }
+        <div className="board-perspective-wrapper">
+          <div
+            className="game-board"
+            style={{ width: boardPx, height: boardPx }}
+            role="grid"
+            aria-label="Game board"
+          >
+            {displayBoard.map((row, yIdx) =>
+              row.map((stack, x) => {
+                const y = isFlipped ? 11 - yIdx : yIdx;
+                const isSelected = selected?.x === x && selected?.y === y;
+                const isPending = isPendingCell(x, y);
+                const animating = isAIMoveDest(x, y);
+                const isSpectator = gameMode === 'MP' && playerNumber == null;
+                const tabIndex = isSpectator ? -1 : 0;
+                let stackToShow = stack;
+                if (aiMoveAnimating && flyingPiece) {
+                  if ((flyingPiece.from.x === x && flyingPiece.from.y === y) || (flyingPiece.to.x === x && flyingPiece.to.y === y)) {
+                    stackToShow = stack.slice(0, -1);
                   }
+                }
+                const cellDiv = (
+                  <div
+                    key={`${x}-${y}`}
+                    ref={el => { cellRefs.current[y][x] = el; }}
+                    className={`cell${isSelected ? ' selected' : ''}${focusCell && focusCell.x === x && focusCell.y === y ? ' focus-visible' : ''}${isPending ? ' pending-jump' : ''}${animating ? ' ai-animating' : ''}`}
+                    data-light={(x + y) % 2 === 0 ? 'true' : 'false'}
+                    data-row={y}
+                    data-col={x}
+                    data-animating={animating ? 'true' : undefined}
+                    draggable={stack.length > 0 && !isThinking && !aiMoveAnimating && !aiMultiJumpAnimating}
+                    onDragStart={handleDragStart(x, y)}
+                    onClick={() => handleCellClick(x, y)}
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={handleDrop(x, y)}
+                    style={isThinking || aiMoveAnimating || aiMultiJumpAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
+                    role="gridcell"
+                    tabIndex={tabIndex}
+                    aria-label={stack.length > 0 ? `Stack at ${x + 1},${y + 1}` : `Empty square at ${x + 1},${y + 1}`}
+                    onFocus={() => setFocusCell({ x, y })}
+                    onBlur={() => setFocusCell(null)}
+                    onKeyDown={handleCellKeyDown(x, y)}
+                    aria-disabled={isSpectator}
+                  >
+                    <Stack stack={stackToShow} animating={animating} />
+                  </div>
+                );
+                if (Tooltip) {
                   return (
-                    <div
+                    <Tooltip
                       key={`${x}-${y}`}
-                      className={`cell${isSelected ? ' selected' : ''}${isPending ? ' pending-jump' : ''}${animating ? ' ai-animating' : ''}`}
-                      data-light={(x + y) % 2 === 0 ? 'true' : 'false'}
-                      data-row={y}
-                      data-col={x}
-                      data-animating={animating ? 'true' : undefined}
-                      draggable={stack.length > 0 && !isThinking && !aiMoveAnimating}
-                      onDragStart={handleDragStart(x, y)}
-                      onClick={() => handleCellClick(x, y)}
-                      onDragOver={e => e.preventDefault()}
-                      onDrop={handleDrop(x, y)}
-                      style={isThinking || aiMoveAnimating ? { pointerEvents: 'none', opacity: 0.7 } : {}}
+                      content={
+                        stack.length > 0
+                          ? isPending
+                            ? 'This stack must jump again!'
+                            : <>
+                                Click or drag to move this stack.<br />
+                                <span style={{ fontSize: '0.93em', color: '#ffe082', display: 'block', marginTop: 2 }}>
+                                  <strong>Tip:</strong> You can dismiss this tooltip with the button.
+                                </span>
+                              </>
+                          : 'Empty square. Only dark squares are playable.'
+                      }
+                      ariaLabel={stack.length > 0 ? 'stack' : 'empty square'}
+                      dismissKey={stack.length > 0 && !isPending ? 'gomony_tooltip_dismissed_v1' : undefined}
                     >
-                      <Stack stack={stackToShow} animating={animating} />
-                    </div>
+                      {cellDiv}
+                    </Tooltip>
                   );
-                })
-              )}
-              {/* Flying piece overlay */}
-              {flyingPiece && (
-                <FlyingPieceOverlay
-                  piece={flyingPiece.piece}
-                  from={flyingPiece.from}
-                  to={flyingPiece.to}
-                  boardPx={boardPx}
-                  duration={AI_MOVE_ANIMATION_DURATION}
-                />
-              )}
-            </div>
+                }
+                return cellDiv;
+              })
+            )}
+            {/* Flying piece overlay */}
+            {flyingPiece && (
+              <FlyingPieceOverlay
+                piece={flyingPiece.piece}
+                from={flyingPiece.from}
+                to={flyingPiece.to}
+                boardPx={boardPx}
+                duration={AI_MOVE_ANIMATION_DURATION}
+              />
+            )}
           </div>
         )}
+        </div>
+      </div>
       </div>
 
       {/* ── Right sidebar: both players + restart + status ── */}
@@ -418,6 +448,8 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
             className="restart-btn"
             onClick={() => setShowRestartConfirm(true)}
             disabled={isThinking}
+            role="button"
+            aria-label="Restart Game"
           >
             Restart Game
           </button>

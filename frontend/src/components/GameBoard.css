@@ -98,6 +98,13 @@
   filter: brightness(1.1);
 }
 
+.cell.focus-visible {
+  outline: 3px solid #4a90e2;
+  outline-offset: -3px;
+  box-shadow: 0 0 0 2px #4a90e288;
+  z-index: 2;
+}
+
 .cell.pending-jump {
   outline: 3px solid #f0a500;
   outline-offset: -3px;

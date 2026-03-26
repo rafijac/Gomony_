@@ -15,4 +15,19 @@ describe('PlayerInfo', () => {
     const img = screen.getByAltText('Player');
     expect(img).toHaveAttribute('src', '/assets/avatars/avatar1.png');
   });
+
+  it('shows migrated legacy user fallback', () => {
+    // Simulate legacy user with no name/avatar
+    render(<PlayerInfo name={undefined as any} avatarUrl={undefined as any} />);
+    expect(screen.getByText('Player')).toBeInTheDocument();
+    const img = screen.getByAltText('Player');
+    expect(img).toHaveAttribute('src', '/assets/avatars/avatar1.png');
+  });
+
+  it('locks editing after game start (should fail until implemented)', () => {
+    // Simulate prop: editingLocked
+    render(<PlayerInfo name="Alice" avatarUrl="/assets/avatars/avatar2.png" editingLocked={true} />);
+    // Try to find edit button (should not exist)
+    expect(screen.queryByRole('button', { name: /edit/i })).toBeNull();
+  });
 });
