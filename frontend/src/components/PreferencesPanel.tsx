@@ -7,10 +7,11 @@ const themes = [
   { value: 'dark', label: 'Dark' },
 ];
 
-export default function PreferencesPanel({ open, onClose, userRole = 'player' }: {
+export default function PreferencesPanel({ open, onClose, userRole = 'player', editingLocked = false }: {
   open: boolean;
   onClose: () => void;
   userRole?: 'player' | 'spectator' | 'ai';
+  editingLocked?: boolean;
 }) {
   const [prefs, setPrefs] = usePreferences();
   const [analyticsOptOut, setAnalyticsOptOut] = React.useState(() => window.localStorage.getItem('gomony.analyticsOptOut') === 'true');
@@ -41,6 +42,27 @@ export default function PreferencesPanel({ open, onClose, userRole = 'player' }:
           </div>
         )}
         <form>
+          {/* Avatar and Display Name — locked after game start */}
+          <label>
+            Display Name:
+            <input
+              type="text"
+              aria-label="Display Name"
+              disabled={editingLocked || isSpectator}
+              style={{ marginLeft: 8 }}
+            />
+          </label>
+          <label>
+            Avatar:
+            <button
+              type="button"
+              aria-label="Avatar"
+              disabled={editingLocked || isSpectator}
+              style={{ marginLeft: 8 }}
+            >
+              Change Avatar
+            </button>
+          </label>
           <label>
             <input
               type="checkbox"

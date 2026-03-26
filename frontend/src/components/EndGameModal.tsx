@@ -100,6 +100,9 @@ export default function EndGameModal({
             ? `${player.displayName} vs ${opponent.displayName}`
             : outcomeMessages[outcome] || 'Game Over'}
         </h2>
+        {isSpectator && outcomeMessages[outcome] && (
+          <p className="endgame-outcome-spectator">{outcomeMessages[outcome]}</p>
+        )}
         <div className="endgame-players">
           <div className="player-info">
             <img src={player.avatarUrl} alt={player.displayName} className="avatar" />

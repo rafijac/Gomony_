@@ -63,7 +63,7 @@ describe('EndGameModal', () => {
   it('shows subtle/neutral feedback for draw, resign, timeout, disconnect, abandon (TDD)', () => {
     const outcomes = ['draw', 'resign', 'timeout', 'disconnect', 'abandoned'];
     outcomes.forEach(outcome => {
-      render(
+      const { unmount } = render(
         <EndGameModal
           outcome={outcome as any}
           player={player}
@@ -75,6 +75,7 @@ describe('EndGameModal', () => {
       expect(screen.queryByTestId('confetti-effect')).toBeNull();
       // Should show a neutral/subtle feedback element
       expect(screen.getByTestId('endgame-feedback')).toBeTruthy();
+      unmount();
     });
   });
 

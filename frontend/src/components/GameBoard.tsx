@@ -51,8 +51,6 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
   const [selected, setSelected] = useState<{ x: number; y: number } | null>(null);
   // For keyboard navigation: track focused cell
   const [focusedCell, setFocusedCell] = useState<{ x: number; y: number } | null>(null);
-  // Ref to all cell elements for focus management
-  const cellRefs = useRef<(HTMLDivElement | null)[][]>([]);
   // const [showSessionModal, setShowSessionModal] = useState(false); // unused
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   // For AI move animation
@@ -416,9 +414,7 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
               />
             )}
           </div>
-        )}
         </div>
-      </div>
       </div>
 
       {/* ── Right sidebar: both players + restart + status ── */}

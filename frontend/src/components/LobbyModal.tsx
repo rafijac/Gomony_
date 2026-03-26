@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import './LobbyModal.css';
+import AvatarSelector from './AvatarSelector';
+import { AVATAR_PRESETS } from '../assets/avatars/presets';
 
 interface LobbyModalProps {
   onCreate: (gameId: string, sessionToken: string, playerNumber: number, orientation: 'south' | 'north') => void;
   onJoin: (gameId: string, sessionToken: string, playerNumber: number, orientation: 'south' | 'north') => void;
   onCancel: () => void;
+  editingLocked?: boolean;
 }
 
-export default function LobbyModal({ onCreate, onJoin, onCancel }: LobbyModalProps) {
+export default function LobbyModal({ onCreate, onJoin, onCancel, editingLocked = false }: LobbyModalProps) {
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState(AVATAR_PRESETS[0]);
+  const [playerName, setPlayerName] = useState('');
 
   async function handleCreate() {
     setLoading(true);
@@ -60,6 +65,17 @@ export default function LobbyModal({ onCreate, onJoin, onCancel }: LobbyModalPro
     <div className="modal-backdrop">
       <div className="modal">
         <h2>Multiplayer Lobby</h2>
+        <div className="lobby-profile-section">
+          <AvatarSelector value={selectedAvatar} onChange={setSelectedAvatar} editingLocked={editingLocked} />
+          <input
+            type="text"
+            placeholder="Enter your name"
+            value={playerName}
+            onChange={e => setPlayerName(e.target.value)}
+            disabled={editingLocked || loading}
+            aria-label="Display name"
+          />
+        </div>
         <button className="modal-btn" onClick={handleCreate} disabled={loading}>
           Create New Game
         </button>
