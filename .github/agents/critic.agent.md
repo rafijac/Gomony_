@@ -14,9 +14,17 @@ handoffs:
     agent: Analyst
     prompt: Plan reveals research gaps or unverified assumptions. Please investigate.
     send: false
+  - label: Request Adversarial Review
+    agent: Red Team
+    prompt: Plan has passed structural review. Please adversarially attack it to find exploitable assumptions, race conditions, edge cases, and failure modes before implementation begins.
+    send: false
   - label: Approve for Implementation
     agent: Implementer
-    prompt: Plan is sound and ready for implementation. Please begin implementation now. 
+    prompt: Plan is sound and ready for implementation. Please begin implementation now.
+    send: false
+  - label: Hard Block — Do Not Implement
+    agent: Planner
+    prompt: This plan is BLOCKED for implementation. Critical findings must be resolved before the Critic can approve. Do NOT invoke the Implementer until a revised plan is submitted and approved.
     send: false
   - label: Escalate to Expert
     agent: Expert
@@ -69,6 +77,19 @@ Review Method:
    - **Ask user explicitly**: "This plan has X unresolved open questions. Do you want to approve for implementation with these unresolved, or should Planner address them first?"
    - Do NOT silently approve plans with unresolved open questions.
 7. Document: Create/update `agent-output/critiques/Name-critique.md`. Track status (OPEN/ADDRESSED/RESOLVED/DEFERRED).
+
+### Explicit Approval Criteria
+
+**A plan MUST have ALL of the following before the "Approve for Implementation" handoff is used:**
+- No CRITICAL findings open
+- No unresolved OPEN QUESTION items
+- Value Statement is present and user-story-formatted
+- Architectural alignment confirmed (or Architect has explicitly approved)
+- Scope is contained (deliverable in ≤1 week by one implementer)
+- No prescriptive code in the plan body
+
+**If any criterion is not met, use "Hard Block — Do Not Implement" and send to Planner for revision.**
+Do not use cautious language like "mostly approved" or "approved pending minor fixes" — it is either APPROVED or BLOCKED.
 
 Response Style:
 - Concise headings: Value Statement Assessment (MUST start here), Overview, Architectural Alignment, Scope Assessment, Technical Debt Risks, Findings, Questions.

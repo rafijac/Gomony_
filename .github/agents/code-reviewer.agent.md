@@ -14,8 +14,12 @@ handoffs:
     agent: Architect
     prompt: Implementation reveals architectural issues or deviates significantly from design.
     send: false
+  - label: Request Adversarial Review
+    agent: Red Team
+    prompt: Implementation has passed code quality review. Please adversarially attack the code to find exploits, race conditions, edge cases, and logic flaws before QA.
+    send: false
   - label: Send for Testing
-    agent: QA
+    agent: QA Engineer
     prompt: Code review approved. Implementation ready for QA testing.
     send: false
   - label: Escalate to Expert

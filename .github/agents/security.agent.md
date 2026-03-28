@@ -22,10 +22,10 @@ handoffs:
     agent: Architect
     prompt: Security audit reveals architectural concerns requiring design changes.
     send: false
-   - label: Escalate to Expert
-      agent: Expert
-      prompt: Security agent is stuck or needs advanced reasoning. Please advise or provide a solution.
-      send: false
+  - label: Escalate to Expert
+    agent: Expert
+    prompt: Security agent is stuck or needs advanced reasoning. Please advise or provide a solution.
+    send: false
 ---
 
 # Security Agent - Comprehensive Security Review Specialist
