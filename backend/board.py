@@ -1,9 +1,17 @@
-"""Board helpers: board construction and move application."""
-from typing import List
+
+"""
+Board helpers: board construction, move application, jump detection, and stack management.
+"""
+from typing import List, Tuple
 from shared.validate_move import validate_move
 
 
 def make_initial_board() -> List[List[List[int]]]:
+    """
+    Create the initial 12x12 Gomony board.
+    Player 1 (1) occupies dark squares in rows 0-3, Player 2 (2) in rows 8-11.
+    Each cell is a stack (list) of pieces, bottom→top.
+    """
     board: List[List[List[int]]] = [[[] for _ in range(12)] for _ in range(12)]
     for row in range(4):
         for col in range(12):
@@ -16,7 +24,11 @@ def make_initial_board() -> List[List[List[int]]]:
     return board
 
 
-def get_jumps_from(board, pos):
+def get_jumps_from(board: List[List[List[int]]], pos: Tuple[int, int]) -> List[Tuple[int, int]]:
+    """
+    Return a list of valid jump destinations from a given position.
+    Only considers jumps (distance 2 diagonals).
+    """
     r, c = pos
     result = []
     for dr, dc in [(-2, -2), (-2, 2), (2, -2), (2, 2)]:
@@ -28,7 +40,10 @@ def get_jumps_from(board, pos):
     return result
 
 
-def get_all_jumps(board, player):
+def get_all_jumps(board: List[List[List[int]]], player: int) -> bool:
+    """
+    Return True if the player has any available jumps on the board.
+    """
     own = (1, 3) if player == 1 else (2, 4)
     for r in range(12):
         for c in range(12):
@@ -39,20 +54,50 @@ def get_all_jumps(board, player):
     return False
 
 
-def apply_move(board, sr, sc, er, ec, kinged):
+
+def move_stack(board: List[List[List[int]]], sr: int, sc: int, er: int, ec: int) -> None:
+    """
+    Move the entire stack from (sr, sc) to (er, ec).
+    """
+    board[er][ec] = board[sr][sc][:]
+    board[sr][sc] = []
+
+def capture_stack(board: List[List[List[int]]], sr: int, sc: int, er: int, ec: int) -> None:
+    """
+    Perform a jump: move stack from (sr, sc) to (er, ec), capturing the top of the jumped stack.
+    """
+    dr, dc = er - sr, ec - sc
+    mr, mc = sr + dr // 2, sc + dc // 2
+    captured_top = board[mr][mc].pop()
+    moving_stack = board[sr][sc][:]
+    board[er][ec] = [captured_top] + moving_stack
+    board[sr][sc] = []
+
+def maybe_king_top(board: List[List[List[int]]], er: int, ec: int) -> None:
+    """
+    If the top piece at (er, ec) is eligible, king it (1→3, 2→4).
+    """
+    if not board[er][ec]:
+        return
+    top = board[er][ec][-1]
+    if top == 1:
+        board[er][ec][-1] = 3
+    elif top == 2:
+        board[er][ec][-1] = 4
+
+def apply_move(board: List[List[List[int]]], sr: int, sc: int, er: int, ec: int, kinged: bool) -> None:
+    """
+    Apply a move to the board, handling jumps, stack movement, and kinging.
+    Args:
+        board: The 12x12 board (in-place modification)
+        sr, sc: Start row, col
+        er, ec: End row, col
+        kinged: Whether the move results in kinging
+    """
     dr, dc = er - sr, ec - sc
     if abs(dr) == 2:
-        mr, mc = sr + dr // 2, sc + dc // 2
-        captured_top = board[mr][mc].pop()
-        moving_stack = board[sr][sc][:]
-        board[er][ec] = [captured_top] + moving_stack
-        board[sr][sc] = []
+        capture_stack(board, sr, sc, er, ec)
     else:
-        board[er][ec] = board[sr][sc][:]
-        board[sr][sc] = []
+        move_stack(board, sr, sc, er, ec)
     if kinged:
-        top = board[er][ec][-1] if board[er][ec] else None
-        if top == 1:
-            board[er][ec][-1] = 3
-        elif top == 2:
-            board[er][ec][-1] = 4
+        maybe_king_top(board, er, ec)

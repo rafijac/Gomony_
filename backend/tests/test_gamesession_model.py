@@ -1,5 +1,8 @@
 import pytest
-from game_session import GameSession
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from game_session.__main__ import GameSession
 
 def test_gamesession_init():
     session = GameSession("testid")

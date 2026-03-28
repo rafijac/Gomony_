@@ -1,8 +1,12 @@
-
-
-# Moved to game_session/__main__.py for modular package structure.
-raise ImportError('game_session.py has moved to game_session/__main__.py. Update imports to use from game_session.__main__ import GameSession')
-
+"""
+GameSession model and shared sessions registry.
+Delegates player info, session token, and board state logic to helpers for modularity.
+"""
+import threading
+from typing import Dict, Optional
+from game_session.player_info import LockedPlayerInfo
+from game_session.session_token import create_player_token, get_player_by_token
+from game_session.board_state import initialize_board
 
 class GameSession:
     """
@@ -61,7 +65,6 @@ class GameSession:
         """
         return get_player_by_token(self.session_tokens, token)
 
-
     def to_dict(self, player_number: Optional[int] = None):
         """
         Return a dictionary representation of the session, including player info and board state.
@@ -95,7 +98,6 @@ class GameSession:
         if self.completed and self.end_state:
             d["end_state"] = self.end_state
         return d
-
 
 # Shared sessions registry
 sessions: Dict[str, GameSession] = {}
