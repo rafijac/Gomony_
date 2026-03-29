@@ -8,6 +8,20 @@
 			"isBackground": true,
 			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "Run Backend (backend/main.py)",
+			"type": "shell",
+			"command": "python backend/main.py",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Run Backend (backend/main.py)",
+			"type": "shell",
+			"command": "python backend/main.py",
+			"isBackground": true,
+			"group": "build"
 		}
 	]
 }
