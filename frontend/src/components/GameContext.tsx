@@ -1,7 +1,7 @@
 ﻿import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api, setSessionToken as setApiSessionToken } from '../api';
 import { postAIMove } from '../aiApi';
-import { initialBoard, GameContextValue } from './GameContextTypes';
+import { initialBoard, type GameContextValue } from './GameContextTypes';
 import { useMoveStack } from './hooks/useMoveStack';
 
 export const GameContext = createContext<GameContextValue>({
