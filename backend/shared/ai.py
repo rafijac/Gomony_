@@ -82,21 +82,53 @@ def evaluate_board(board, player):
             score += 0.2 * (len(stack) - 1) * mult
     return score
 
-def minimax(board, player, depth, maximizing):
+def enumerate_continuation_jumps(board, player, piece_pos):
     """
-    Minimax search with depth limit (no alpha-beta pruning).
+    Enumerate all valid continuation jumps from a specific piece during a multi-jump chain.
+    Unlike enumerate_valid_moves, this is constrained to a single piece (the one that just jumped).
+    """
+    r, c = piece_pos
+    stack = board[r][c]
+    if not stack:
+        return []
+    top = stack[-1]
+    if player == 1 and top not in (1, 3):
+        return []
+    if player == 2 and top not in (2, 4):
+        return []
+    moves = []
+    for dr, dc in [(-2, -2), (-2, 2), (2, -2), (2, 2)]:
+        nr, nc = r + dr, c + dc
+        if 0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE:
+            valid, _, _ = validate_move(board, (r, c), (nr, nc))
+            if valid:
+                moves.append(((r, c), (nr, nc)))
+    return moves
+
+def minimax(board, player, depth, maximizing, forced_piece=None):
+    """
+    Minimax search with depth limit.
+    When forced_piece is set, only that piece may move (mid-chain continuation rule).
     Args:
         board: 12x12 board state
         player: 1 or 2 (the maximizing player)
         depth: search depth
         maximizing: True if maximizing for 'player', False for opponent
+        forced_piece: (row, col) of the piece that must continue jumping, or None
     Returns:
         (score, move) where move is ((start_row, start_col), (end_row, end_col))
     """
     if depth == 0:
         return evaluate_board(board, player), None
     current = player if maximizing else (2 if player == 1 else 1)
-    moves = enumerate_valid_moves(board, current)
+    if forced_piece is not None:
+        # Mid-chain: only the landing piece may continue jumping
+        moves = enumerate_continuation_jumps(board, current, forced_piece)
+        if not moves:
+            # Chain is over — switch turns and continue search
+            return minimax(board, player, depth, not maximizing, forced_piece=None)
+    else:
+        moves = enumerate_valid_moves(board, current)
     if not moves:
         return evaluate_board(board, player), None
     best_score = float('-inf') if maximizing else float('inf')
@@ -109,12 +141,12 @@ def minimax(board, player, depth, maximizing):
         if not valid:
             continue
         apply_move(new_board, sr, sc, er, ec, kinged)
-        # Multi-jump continuation: if a jump leaves more jumps available, the same player continues
         is_jump = abs(er - sr) == 2
         if is_jump and not kinged and get_jumps_from(new_board, (er, ec)):
-            score, _ = minimax(new_board, player, depth - 1, maximizing)
+            # Multi-jump continuation: same player, same piece must continue
+            score, _ = minimax(new_board, player, depth - 1, maximizing, forced_piece=(er, ec))
         else:
-            score, _ = minimax(new_board, player, depth - 1, not maximizing)
+            score, _ = minimax(new_board, player, depth - 1, not maximizing, forced_piece=None)
         if maximizing:
             if score > best_score:
                 best_score = score
@@ -125,18 +157,57 @@ def minimax(board, player, depth, maximizing):
                 best_move = move
     return best_score, best_move
 
-def choose_ai_move(board, player, depth=2):
+def board_hash(board):
+    """Return a hashable representation of the board state."""
+    return str(board)
+
+
+def choose_ai_move(board, player, depth=2, position_history=None):
     """
     Main AI entry point. Returns the best move for the given player using minimax.
+    Applies a penalty to moves that revisit recently-seen positions to prevent oscillation.
     Args:
         board: 12x12 board state
         player: 1 or 2
         depth: minimax search depth
+        position_history: list of recently-seen board hashes (to avoid repetition)
     Returns:
         (start_pos, end_pos) or None if no moves
     """
-    _, move = minimax(board, player, depth, True)
-    return move
+    if position_history is None:
+        position_history = []
+
+    moves = enumerate_valid_moves(board, player)
+    if not moves:
+        return None
+
+    best_score = float('-inf')
+    best_move = None
+
+    for move in moves:
+        new_board = copy.deepcopy(board)
+        sr, sc = move[0]
+        er, ec = move[1]
+        valid, _, kinged = validate_move(new_board, (sr, sc), (er, ec))
+        if not valid:
+            continue
+        apply_move(new_board, sr, sc, er, ec, kinged)
+        is_jump = abs(er - sr) == 2
+        if is_jump and not kinged and get_jumps_from(new_board, (er, ec)):
+            # Multi-jump continuation: same player, same piece must continue
+            score, _ = minimax(new_board, player, depth - 1, True, forced_piece=(er, ec))
+        else:
+            score, _ = minimax(new_board, player, depth - 1, False)
+
+        # Penalize moves that revisit a recent position to break oscillation loops
+        if board_hash(new_board) in position_history:
+            score -= 10.0
+
+        if score > best_score:
+            best_score = score
+            best_move = move
+
+    return best_move
 
 def simulate_game(board, starting_player, depth=1, max_moves=100):
     """
