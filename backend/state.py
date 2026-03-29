@@ -6,4 +6,5 @@ state: dict = {
     "current_player": 1,
     "move_count": 0,
     "pending_jump": None,
+    "ai_position_history": [],
 }

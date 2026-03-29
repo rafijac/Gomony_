@@ -7,7 +7,7 @@ from models import MoveRequest, AIMoveRequest
 from board import make_initial_board, get_jumps_from, get_all_jumps, apply_move
 import state as _s
 from shared.validate_move import validate_move
-from shared.ai import choose_ai_move
+from shared.ai import choose_ai_move, board_hash
 from end_state import get_end_state
 
 router = APIRouter()
@@ -37,6 +37,7 @@ async def reset():
     _s.state["current_player"] = 1
     _s.state["move_count"] = 0
     _s.state["pending_jump"] = None
+    _s.state["ai_position_history"] = []
     return {
         "board": _s.state["board"],
         "current_player": _s.state["current_player"],
@@ -140,7 +141,8 @@ async def ai_move_endpoint(body: AIMoveRequest):
     current_player = _s.state["current_player"]
     depth = body.depth if body.depth else 2
 
-    move = choose_ai_move(board, current_player, depth=depth)
+    position_history = _s.state.get("ai_position_history", [])
+    move = choose_ai_move(board, current_player, depth=depth, position_history=position_history)
     if move is None:
         end_state = get_end_state(board)
         result = {"valid": False, "reason": "No moves available for AI", "board": board, "current_player": current_player, "pending_jump": None, "moves": []}
@@ -173,6 +175,12 @@ async def ai_move_endpoint(body: AIMoveRequest):
     _s.state["pending_jump"] = None
     _s.state["current_player"] = 2 if current_player == 1 else 1
     _s.state["move_count"] += 1
+
+    # Track board positions to prevent AI repetition loops (keep last 6 states)
+    h = board_hash(_s.state["board"])
+    history = _s.state.get("ai_position_history", [])
+    history.append(h)
+    _s.state["ai_position_history"] = history[-6:]
 
     end_state = get_end_state(_s.state["board"])
     result = {
