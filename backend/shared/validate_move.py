@@ -108,8 +108,13 @@ def validate_move(current_state, start_pos, end_pos):
             return False, "Destination must be empty for a normal move", False
         return True, "Valid move to empty cell", is_kinged(moving_piece, er)
 
-    # 8. Jump move (distance 2): non-kings may jump in any direction (including backward)
+    # 8. Jump move (distance 2): non-kings restricted to forward direction
     if (abs(dr), abs(dc)) == (2, 2):
+        if not king and not is_forward_move(moving_piece, sr, er):
+            if moving_piece == 1:
+                return False, "White must jump forward", False
+            if moving_piece == 2:
+                return False, "Brown must jump forward", False
         valid, reason = is_jump_move_valid(board, sr, sc, er, ec, own_piece_types)
         if not valid:
             return False, reason, False
