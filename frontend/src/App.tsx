@@ -8,6 +8,7 @@ import LobbyModal from './components/LobbyModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 
+
 function App() {
   return (
     <GameProvider>
@@ -24,7 +25,6 @@ function AppContent() {
   const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, gameId } = useGame();
   const [showModeModal, setShowModeModal] = useState(true);
   const [showLobby, setShowLobby] = useState(false);
-  // ...existing code...
 
   useEffect(() => {
     setSessionToken(sessionToken || null);
