@@ -50,6 +50,7 @@ type BoardGridProps = {
   handleDrop: (x: number, y: number) => (e: React.DragEvent) => void;
   handleCellKeyDown: (x: number, y: number) => (e: React.KeyboardEvent) => void;
   boardPx: number;
+  children?: React.ReactNode;
 };
 
 const BoardGrid: React.FC<BoardGridProps> = ({
@@ -69,6 +70,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({
   handleDrop,
   handleCellKeyDown,
   boardPx,
+  children,
 }) => {
   const displayBoard = isFlipped ? [...board].slice().reverse().map(row => [...row].reverse()) : board;
   return (
@@ -141,6 +143,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({
           return cellDiv;
         })
       )}
+      {children}
     </div>
   );
 };

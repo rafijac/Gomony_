@@ -93,13 +93,14 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
             handleCellClick={handleCellClick} handleDragStart={handleDragStart}
             handleDrop={handleDrop} handleCellKeyDown={handleCellKeyDown}
             boardPx={boardPx}
-          />
-          {flyingPiece && (
-            <FlyingPieceOverlay
-              piece={flyingPiece.piece} from={flyingPiece.from} to={flyingPiece.to}
-              boardPx={boardPx} duration={AI_MOVE_ANIMATION_DURATION}
-            />
-          )}
+          >
+            {flyingPiece && (
+              <FlyingPieceOverlay
+                piece={flyingPiece.piece} from={flyingPiece.from} to={flyingPiece.to}
+                boardPx={boardPx} duration={AI_MOVE_ANIMATION_DURATION}
+              />
+            )}
+          </BoardGrid>
         </div>
       </div>
       <PlayerSidebar

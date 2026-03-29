@@ -27,8 +27,8 @@ export default function FlyingPieceOverlay({ piece, from, to, boardPx, duration 
   // Calculate cell size and positions
   const cellSize = boardPx / 12;
   const getPos = (cell: { x: number; y: number }) => ({
-    x: cell.x * cellSize + cellSize / 2,
-    y: cell.y * cellSize + cellSize / 2,
+    x: cell.x * cellSize,
+    y: cell.y * cellSize,
   });
   const fromPos = getPos(from);
   const toPos = getPos(to);

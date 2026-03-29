@@ -55,6 +55,7 @@
   background: #2a1608;
   border: 10px solid #3a2412;
   border-radius: 4px;
+  position: relative;
   transform: rotateX(42deg);
   transform-origin: top center;
   box-shadow:
