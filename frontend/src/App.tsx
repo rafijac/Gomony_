@@ -6,6 +6,7 @@ import ModeSelectModal from './components/ModeSelectModal';
 import { setSessionToken } from './api';
 import LobbyModal from './components/LobbyModal';
 import ErrorBoundary from './components/ErrorBoundary';
+import EndGameModal from './components/EndGameModal';
 import './App.css';
 
 
@@ -22,13 +23,21 @@ function App() {
 export default App;
 
 function AppContent() {
-  const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, gameId } = useGame();
+  const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, gameId, endState } = useGame();
   const [showModeModal, setShowModeModal] = useState(true);
   const [showLobby, setShowLobby] = useState(false);
+  const [showEndModal, setShowEndModal] = useState(false);
 
   useEffect(() => {
     setSessionToken(sessionToken || null);
   }, [sessionToken]);
+
+  useEffect(() => {
+    if (endState && endState.game_over) {
+      // Ensure the board visually updates before showing the modal
+      requestAnimationFrame(() => setShowEndModal(true));
+    }
+  }, [endState]);
 
   const handleSelect = (mode: '2P' | 'PC' | 'MP') => {
     if (mode === 'MP') {
@@ -59,6 +68,11 @@ function AppContent() {
   const handleGomonyClick = () => {
     setShowModeModal(true);
     setShowLobby(false);
+  };
+
+  const handleEndModalClose = () => {
+    setShowEndModal(false);
+    resetGame();
   };
 
   const isPlaying = !showModeModal && !showLobby;
@@ -94,7 +108,16 @@ function AppContent() {
           <GameBoard />
         </>
       )}
-      {/* HelpModal removed */}
+      {showEndModal && endState && (
+        <EndGameModal
+          outcome={endState.end_reason || 'draw'}
+          customMessage={endState.winner ? `Winner: ${endState.winner}` : undefined}
+          player={{ userId: '', displayName: 'You', avatarUrl: '', role: 'player' }}
+          opponent={{ userId: '', displayName: 'Opponent', avatarUrl: '', role: 'player' }}
+          isSpectator={false}
+          onExit={handleEndModalClose}
+        />
+      )}
       <footer className="app-footer">
         <span className="app-footer-name">GOMONY</span>
         <span className="app-footer-sep">&bull;</span>
