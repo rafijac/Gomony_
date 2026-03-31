@@ -2,8 +2,7 @@
 import { useEffect, useRef } from 'react';
 import './EndGameModal.css';
 import ConfettiEffect from './ConfettiEffect';
-import useSoundEffect from './useSoundEffect';
-import { usePreferences } from '../hooks/usePreferences';
+// ...existing code...
 
 interface PlayerInfo {
   userId: string;
@@ -26,28 +25,28 @@ interface EndGameModalProps {
 
 const outcomeMessages: Record<string, string> = {
   win: 'You win!',
-  loss: 'You lose.',
+  loss: 'You lost.',
   draw: 'Draw!',
   resign: 'You resigned.',
-  timeout: 'You lost by timeout.',
+  timeout: 'You lost on time.',
   disconnect: 'Opponent disconnected.',
   abandoned: 'Game abandoned.',
   simultaneous: 'Game ended simultaneously.'
 };
 
-const feedbackIcons: Record<string, string> = {
+const outcomeIcons: Record<string, string> = {
+  win: '🏆',
+  loss: '⚔️',
   draw: '🤝',
   resign: '🏳️',
-  timeout: '⏰',
+  timeout: '⏱️',
   disconnect: '🔌',
   abandoned: '🚫',
   simultaneous: '⚖️',
-  loss: '😞'
 };
 
 export default function EndGameModal({
   outcome,
-  customMessage,
   player,
   opponent,
   isSpectator,
@@ -56,7 +55,6 @@ export default function EndGameModal({
   onReplay,
   onExit
 }: EndGameModalProps) {
-  const [prefs, setPrefs] = usePreferences();
   // Use fallback for prefers-reduced-motion in test environment
   let prefersReducedMotion = false;
   try {
@@ -65,7 +63,6 @@ export default function EndGameModal({
     prefersReducedMotion = false;
   }
   const modalRef = useRef<HTMLDivElement>(null);
-  const playSound = useSoundEffect();
 
   // Accessibility: focus trap
   useEffect(() => {
@@ -74,18 +71,11 @@ export default function EndGameModal({
     }
   }, []);
 
-  // Play sound and show confetti on win
-  useEffect(() => {
-    if (outcome === 'win' && prefs.sound && !prefersReducedMotion) {
-      playSound();
-    }
-  }, [outcome, prefs.sound, prefersReducedMotion, playSound]);
-
-  // Mute toggle
-  const handleMute = () => setPrefs({ ...prefs, sound: !prefs.sound });
+  // ...existing code...
 
   return (
     <div className="modal-backdrop endgame-modal-backdrop">
+      {outcome === 'win' && !prefersReducedMotion && prefs.animation && <ConfettiEffect />}
       <div
         className={`modal endgame-modal responsive-modal${prefersReducedMotion ? ' reduced-motion' : ''}`}
         role="dialog"
@@ -93,49 +83,66 @@ export default function EndGameModal({
         aria-labelledby="endgame-title"
         tabIndex={0}
         ref={modalRef}
+        data-outcome={outcome}
         data-prefers-reduced-motion={prefersReducedMotion ? 'true' : 'false'}
       >
-        <h2 id="endgame-title">
-          {isSpectator
-            ? `${player.displayName} vs ${opponent.displayName}`
-            : outcomeMessages[outcome] || 'Game Over'}
-        </h2>
-        {isSpectator && outcomeMessages[outcome] && (
-          <p className="endgame-outcome-spectator">{outcomeMessages[outcome]}</p>
-        )}
-        <div className="endgame-players">
-          <div className="player-info">
-            <img src={player.avatarUrl} alt={player.displayName} className="avatar" />
-            <span>{player.displayName}</span>
+        {/* Sound icon and mute button removed */}
+
+        <div className="endgame-header">
+          <div className="endgame-icon" aria-hidden="true">
+            {outcomeIcons[outcome] || '🎲'}
           </div>
-          <span className="vs">vs</span>
-          <div className="player-info">
-            <img src={opponent.avatarUrl} alt={opponent.displayName} className="avatar" />
-            <span>{opponent.displayName}</span>
-          </div>
+          <h2 id="endgame-title">
+            {isSpectator
+              ? `${player.displayName} vs ${opponent.displayName}`
+              : outcomeMessages[outcome] || 'Game Over'}
+          </h2>
+          {isSpectator && outcomeMessages[outcome] && (
+            <p className="endgame-outcome-spectator">{outcomeMessages[outcome]}</p>
+          )}
         </div>
-        {customMessage && <div className="endgame-custom-message">{customMessage}</div>}
-        {/* Celebratory/feedback effects */}
-        {outcome === 'win' && !prefersReducedMotion && prefs.animation && <ConfettiEffect />}
-        {outcome !== 'win' && (
-          <div data-testid="endgame-feedback" className="endgame-feedback">
-            <span className="feedback-icon" aria-label={outcome}>{feedbackIcons[outcome] || '🎲'}</span>
+
+        <div className="endgame-body">
+          <div className="endgame-players">
+            <div className="player-info" data-winner={outcome === 'win' ? 'true' : 'false'}>
+              <div className="avatar-ring" data-initials={player.avatarUrl ? undefined : (player.displayName.charAt(0).toUpperCase() || '?')}>
+                <img
+                  src={player.avatarUrl}
+                  alt={player.displayName}
+                  className="avatar"
+                  onError={e => {
+                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                    (e.currentTarget.parentElement as HTMLElement).setAttribute('data-initials', player.displayName.charAt(0).toUpperCase() || '?');
+                  }}
+                  style={{ display: player.avatarUrl ? undefined : 'none' }}
+                />
+              </div>
+              <span>{player.displayName}</span>
+            </div>
+            <div className="vs-divider"><span>vs</span></div>
+            <div className="player-info" data-winner={outcome === 'loss' ? 'true' : 'false'}>
+              <div className="avatar-ring" data-initials={opponent.avatarUrl ? undefined : (opponent.displayName.charAt(0).toUpperCase() || '?')}>
+                <img
+                  src={opponent.avatarUrl}
+                  alt={opponent.displayName}
+                  className="avatar"
+                  onError={e => {
+                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                    (e.currentTarget.parentElement as HTMLElement).setAttribute('data-initials', opponent.displayName.charAt(0).toUpperCase() || '?');
+                  }}
+                  style={{ display: opponent.avatarUrl ? undefined : 'none' }}
+                />
+              </div>
+              <span>{opponent.displayName}</span>
+            </div>
           </div>
-        )}
-        {/* Mute button for accessibility */}
-        <button
-          data-testid="mute-sound"
-          className="mute-sound-btn"
-          aria-label={prefs.sound ? 'Mute sound' : 'Unmute sound'}
-          onClick={handleMute}
-        >
-          {prefs.sound ? '🔊' : '🔇'}
-        </button>
-        <div className="endgame-actions">
-          {!isSpectator && onRematch && <button onClick={onRematch}>Rematch</button>}
-          {!isSpectator && onLobby && <button onClick={onLobby}>Return to Lobby</button>}
-          {onReplay && <button onClick={onReplay}>View Replay</button>}
-          {onExit && <button onClick={onExit}>Exit</button>}
+
+          <div className="endgame-actions" style={{ marginTop: '2.2rem' }}>
+            {!isSpectator && onRematch && <button className="btn-primary" onClick={onRematch}>Rematch</button>}
+            {!isSpectator && onLobby && <button className="btn-secondary" onClick={onLobby}>Return to Lobby</button>}
+            {onReplay && <button className="btn-secondary" onClick={onReplay}>View Replay</button>}
+            {onExit && <button className="btn-exit" onClick={onExit}>Exit</button>}
+          </div>
         </div>
       </div>
     </div>
