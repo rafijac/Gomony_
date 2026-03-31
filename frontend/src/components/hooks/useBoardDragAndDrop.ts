@@ -5,7 +5,7 @@ export function useBoardDragAndDrop(
   aiMoveAnimating: boolean,
   canSelect: (x: number, y: number) => boolean,
   moveStack: (from: { x: number; y: number }, to: { x: number; y: number }) => Promise<any>,
-  setSelected: (v: null) => void,
+  setSelected: (v: { x: number; y: number } | null) => void,
   gameMode: string,
   animateAIMove: () => Promise<void>
 ) {
@@ -24,9 +24,13 @@ export function useBoardDragAndDrop(
     const fromY = parseInt(e.dataTransfer.getData('fromY'));
     if (!isNaN(fromX) && !isNaN(fromY)) {
       const result = await moveStack({ x: fromX, y: fromY }, { x: toX, y: toY });
-      setSelected(null);
-      if (result?.valid && !result.pendingJump && result.currentPlayer === 2 && gameMode === 'PC') {
-        await animateAIMove();
+      if (result?.valid && result.pendingJump) {
+        setSelected({ y: result.pendingJump[0], x: result.pendingJump[1] });
+      } else {
+        setSelected(null);
+        if (result?.valid && result.currentPlayer === 2 && gameMode === 'PC') {
+          await animateAIMove();
+        }
       }
     }
   }, [isThinking, aiMoveAnimating, moveStack, setSelected, gameMode, animateAIMove]);

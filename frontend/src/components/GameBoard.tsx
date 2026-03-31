@@ -45,9 +45,14 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
     if (selected) {
       if (selected.x === x && selected.y === y) { setSelected(null); return; }
       const result = await moveStack({ x: selected.x, y: selected.y }, { x, y });
-      setSelected(null);
-      if (result?.valid && !result.pendingJump && result.currentPlayer === 2 && gameMode === 'PC') {
-        await animateAIMove();
+      if (result?.valid && result.pendingJump) {
+        // Auto-select the piece that must continue jumping so the player just clicks the destination
+        setSelected({ y: result.pendingJump[0], x: result.pendingJump[1] });
+      } else {
+        setSelected(null);
+        if (result?.valid && result.currentPlayer === 2 && gameMode === 'PC') {
+          await animateAIMove();
+        }
       }
     } else if (canSelect(x, y)) {
       setSelected({ x, y });

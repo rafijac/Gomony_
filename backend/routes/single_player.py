@@ -105,7 +105,7 @@ async def move_endpoint(body: MoveRequest):
         if more_jumps:
             _s.state["pending_jump"] = [er, ec]
             # Even if a jump is available, check for win before returning
-            end_state = get_end_state()
+            end_state = get_end_state(_s.state["board"])
             move_resp = {"valid": True, "reason": "Jump! Keep jumping.", "board": _s.state["board"], "current_player": _s.state["current_player"], "pending_jump": _s.state["pending_jump"]}
             if end_state:
                 move_resp.update(end_state)
