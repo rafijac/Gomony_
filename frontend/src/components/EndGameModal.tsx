@@ -75,7 +75,7 @@ export default function EndGameModal({
 
   return (
     <div className="modal-backdrop endgame-modal-backdrop">
-      {outcome === 'win' && !prefersReducedMotion && prefs.animation && <ConfettiEffect />}
+      {outcome === 'win' && !prefersReducedMotion && <ConfettiEffect />}
       <div
         className={`modal endgame-modal responsive-modal${prefersReducedMotion ? ' reduced-motion' : ''}`}
         role="dialog"

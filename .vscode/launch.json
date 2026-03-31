@@ -10,11 +10,21 @@
     "configurations": [
         {
             "name": "Python: Run Backend",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/main.py",
-            "console": "integratedTerminal",
-            "justMyCode": true
+            "module": "uvicorn",
+            "args": [
+                "backend.main:app",
+                "--host", "127.0.0.1",
+                "--port", "8001",
+                "--reload"
+            ],
+            "jinja": true,
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            },
+            "console": "integratedTerminal"
         },
         {
             "name": "Vite: Run Frontend",

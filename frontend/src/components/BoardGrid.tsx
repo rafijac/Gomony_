@@ -72,6 +72,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({
   boardPx,
   children,
 }) => {
+  // Flip the board visually if needed
   const displayBoard = isFlipped ? [...board].slice().reverse().map(row => [...row].reverse()) : board;
   return (
     <div
@@ -83,6 +84,22 @@ const BoardGrid: React.FC<BoardGridProps> = ({
       {displayBoard.map((row: StackType[], yIdx: number) =>
         row.map((stack: StackType, x: number) => {
           const y = isFlipped ? 11 - yIdx : yIdx;
+          // Only render stacks and allow interaction on dark squares
+          if ((x + y) % 2 !== 1) {
+            return (
+              <div
+                key={`${x}-${y}`}
+                className="cell light"
+                data-light="true"
+                data-row={y}
+                data-col={x}
+                role="gridcell"
+                tabIndex={-1}
+                aria-label={`Light square at ${x + 1},${y + 1}`}
+                style={{ background: '#e9d7b2' }}
+              />
+            );
+          }
           const isSelected = selected?.x === x && selected?.y === y;
           const isPending = isPendingCell(x, y);
           const animating = isAIMoveDest(x, y);
@@ -96,8 +113,8 @@ const BoardGrid: React.FC<BoardGridProps> = ({
             <div
               key={`${x}-${y}`}
               ref={el => { cellRefs.current[y][x] = el; }}
-              className={`cell${isSelected ? ' selected' : ''}${focusCell && focusCell.x === x && focusCell.y === y ? ' focus-visible' : ''}${isPending ? ' pending-jump' : ''}${animating ? ' ai-animating' : ''}`}
-              data-light={(x + y) % 2 === 0 ? 'true' : 'false'}
+              className={`cell dark${isSelected ? ' selected' : ''}${focusCell && focusCell.x === x && focusCell.y === y ? ' focus-visible' : ''}${isPending ? ' pending-jump' : ''}${animating ? ' ai-animating' : ''}`}
+              data-light="false"
               data-row={y}
               data-col={x}
               data-animating={animating ? 'true' : undefined}

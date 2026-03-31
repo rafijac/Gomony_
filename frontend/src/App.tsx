@@ -27,7 +27,7 @@ function AppContent() {
   const [showModeModal, setShowModeModal] = useState(true);
   const [showLobby, setShowLobby] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
-  const [previewModal, setPreviewModal] = useState<'win' | 'loss' | null>(null);
+  // ...existing code...
 
   useEffect(() => {
     setSessionToken(sessionToken || null);
@@ -123,21 +123,8 @@ function AppContent() {
           onExit={handleEndModalClose}
         />
       )}
-      {previewModal && (
-        <EndGameModal
-          outcome={previewModal}
-          customMessage={previewModal === 'win' ? 'Winner: Player 1' : 'Winner: Player 2'}
-          player={{ userId: '', displayName: 'You', avatarUrl: '', role: 'player' }}
-          opponent={{ userId: '', displayName: 'Opponent', avatarUrl: '', role: 'player' }}
-          isSpectator={false}
-          onExit={() => setPreviewModal(null)}
-        />
-      )}
-      {/* DEV PREVIEW — remove before shipping */}
-      <div style={{ position: 'fixed', bottom: 80, right: 12, display: 'flex', gap: 6, zIndex: 9999 }}>
-        <button onClick={() => setPreviewModal('win')} style={{ padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Preview Win</button>
-        <button onClick={() => setPreviewModal('loss')} style={{ padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Preview Loss</button>
-      </div>
+      // ...existing code...
+      // ...existing code...
       <footer className="app-footer">
         <span className="app-footer-name">GOMONY</span>
         <span className="app-footer-sep">&bull;</span>

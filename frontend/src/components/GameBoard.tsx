@@ -63,7 +63,21 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
     isThinking, aiMoveAnimating, canSelect, moveStack, setSelected, gameMode, animateAIMove
   );
 
-  const isFlipped = orientation === 'north';
+  // Always show the current player at the bottom
+  // Flip the board if:
+  // - Multiplayer: you are Player 1 (so your pieces are at the bottom)
+  // - Multiplayer: you are Player 2 and orientation is 'north' (so your pieces are at the bottom)
+  // - Single player: never flip (PC is always at top)
+  let isFlipped = false;
+  if (gameMode === 'MP') {
+    if (playerNumber === 1) {
+      isFlipped = true;
+    } else if (playerNumber === 2 && orientation === 'north') {
+      isFlipped = true;
+    }
+  } else if (gameMode === 'PC') {
+    isFlipped = false;
+  }
   const isAIMoveDest = (x: number, y: number) =>
     aiMoveAnimating && !!aiMoveDest && aiMoveDest.x === x && aiMoveDest.y === y;
 
@@ -90,14 +104,23 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
       <div ref={boardAreaRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', overflow: 'visible' }}>
         <div className="board-perspective-wrapper">
           <BoardGrid
-            board={board} selected={selected} isFlipped={isFlipped}
-            isPendingCell={isPendingCell} isAIMoveDest={isAIMoveDest}
-            flyingPiece={flyingPiece} aiMoveAnimating={aiMoveAnimating}
-            aiMultiJumpAnimating={aiMultiJumpAnimating} Tooltip={Tooltip}
-            cellRefs={cellRefs} focusCell={focusCell}
-            handleCellClick={handleCellClick} handleDragStart={handleDragStart}
-            handleDrop={handleDrop} handleCellKeyDown={handleCellKeyDown}
+            board={board}
+            selected={selected}
+            isFlipped={isFlipped}
+            isPendingCell={isPendingCell}
+            isAIMoveDest={isAIMoveDest}
+            flyingPiece={flyingPiece}
+            aiMoveAnimating={aiMoveAnimating}
+            aiMultiJumpAnimating={aiMultiJumpAnimating}
+            Tooltip={Tooltip}
+            cellRefs={cellRefs}
+            focusCell={focusCell}
+            handleCellClick={handleCellClick}
+            handleDragStart={handleDragStart}
+            handleDrop={handleDrop}
+            handleCellKeyDown={handleCellKeyDown}
             boardPx={boardPx}
+            // Only render stacks on dark squares
           >
             {flyingPiece && (
               <FlyingPieceOverlay
