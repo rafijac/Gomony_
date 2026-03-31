@@ -23,10 +23,11 @@ function App() {
 export default App;
 
 function AppContent() {
-  const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, gameId, endState } = useGame();
+  const { gameMode, setGameMode, sessionToken, setMultiplayerSession, resetGame, gameId, endState, playerNumber } = useGame();
   const [showModeModal, setShowModeModal] = useState(true);
   const [showLobby, setShowLobby] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
+  const [previewModal, setPreviewModal] = useState<'win' | 'loss' | null>(null);
 
   useEffect(() => {
     setSessionToken(sessionToken || null);
@@ -110,18 +111,37 @@ function AppContent() {
       )}
       {showEndModal && endState && (
         <EndGameModal
-          outcome={endState.end_reason || 'draw'}
-          customMessage={endState.winner ? `Winner: ${endState.winner}` : undefined}
+          outcome={
+            endState.winner != null
+              ? (endState.winner === playerNumber ? 'win' : 'loss')
+              : (endState.end_reason || 'draw')
+          }
+          customMessage={endState.winner ? `Winner: Player ${endState.winner}` : undefined}
           player={{ userId: '', displayName: 'You', avatarUrl: '', role: 'player' }}
           opponent={{ userId: '', displayName: 'Opponent', avatarUrl: '', role: 'player' }}
           isSpectator={false}
           onExit={handleEndModalClose}
         />
       )}
+      {previewModal && (
+        <EndGameModal
+          outcome={previewModal}
+          customMessage={previewModal === 'win' ? 'Winner: Player 1' : 'Winner: Player 2'}
+          player={{ userId: '', displayName: 'You', avatarUrl: '', role: 'player' }}
+          opponent={{ userId: '', displayName: 'Opponent', avatarUrl: '', role: 'player' }}
+          isSpectator={false}
+          onExit={() => setPreviewModal(null)}
+        />
+      )}
+      {/* DEV PREVIEW — remove before shipping */}
+      <div style={{ position: 'fixed', bottom: 80, right: 12, display: 'flex', gap: 6, zIndex: 9999 }}>
+        <button onClick={() => setPreviewModal('win')} style={{ padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Preview Win</button>
+        <button onClick={() => setPreviewModal('loss')} style={{ padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Preview Loss</button>
+      </div>
       <footer className="app-footer">
         <span className="app-footer-name">GOMONY</span>
         <span className="app-footer-sep">&bull;</span>
-        <span>9011 Cliffwood Drive &bull; Houston, Texas 77096</span>
+        <span>Houston, Texas</span>
         <span className="app-footer-sep">&bull;</span>
         <span>COPYRIGHT 1979 &nbsp; Harvey S. Klein &nbsp; Patent Pending</span>
       </footer>
