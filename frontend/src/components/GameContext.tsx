@@ -111,13 +111,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (gameMode === 'MP' && gameId && sessionToken && playerNumber) {
       const poll = async () => {
         try {
-          const res = await fetch(`http://localhost:8001/game/${gameId}/state`);
-          if (res.status === 410 || res.status === 404) {
-            setSessionExpired(true);
-            setLastMessage('Session expired or not found.');
-            return;
-          }
-          const data = await res.json();
+          const res = await api.get(`/game/${gameId}/state`).catch((err) => {
+            const status = err?.response?.status;
+            if (status === 410 || status === 404) {
+              setSessionExpired(true);
+              setLastMessage('Session expired or not found.');
+            }
+            return null;
+          });
+          if (!res) return;
+          const data = res.data;
           flushSync(() => {
             if (data.board) setBoard(data.board);
             if (data.current_player != null) setCurrentPlayer(data.current_player);

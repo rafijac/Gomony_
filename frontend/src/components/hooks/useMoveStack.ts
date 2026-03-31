@@ -1,5 +1,5 @@
 import React from 'react';
-import { postMove, setSessionToken as setApiSessionToken } from '../../api';
+import { api, postMove, setSessionToken as setApiSessionToken } from '../../api';
 import type { MoveResult, MoveResponse } from '../GameContextTypes';
 
 interface UseMoveStackParams {
@@ -58,22 +58,21 @@ export function useMoveStack(p: UseMoveStackParams) {
   ): Promise<MoveResult | null> => {
     try {
       if (p.gameMode === 'MP' && p.gameId && p.sessionToken && p.playerNumber) {
-        const res = await fetch(`http://localhost:8001/game/${p.gameId}/move`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const res = await api.post<MoveResponse>(`/game/${p.gameId}/move`, {
             start_pos: [from.y, from.x],
             end_pos: [to.y, to.x],
             player: p.playerNumber,
             session_token: p.sessionToken,
-          }),
-        });
-        if (res.status === 410 || res.status === 404) {
-          p.setSessionExpired(true);
-          p.setLastMessage('Session expired or not found.');
-          return null;
-        }
-        const result: MoveResponse = await res.json();
+          }).catch((err) => {
+            const status = err?.response?.status;
+            if (status === 410 || status === 404) {
+              p.setSessionExpired(true);
+              p.setLastMessage('Session expired or not found.');
+            }
+            return null;
+          });
+        if (!res) return null;
+        const result: MoveResponse = res.data;
         return applyMoveResponse(result, p);
       } else {
         const result: MoveResponse = await postMove({

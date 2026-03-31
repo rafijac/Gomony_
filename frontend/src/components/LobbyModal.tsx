@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { api } from '../api';
 import './LobbyModal.css';
 import AvatarSelector from './AvatarSelector';
 import { AVATAR_PRESETS } from '../assets/avatars/presets';
@@ -21,8 +22,8 @@ export default function LobbyModal({ onCreate, onJoin, onCancel, editingLocked =
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:8001/game/create', { method: 'POST' });
-      const data = await res.json();
+      const res = await api.post('/game/create');
+      const data = res.data;
       if (data.game_id && data.session_token && data.player_number && data.orientation) {
         onCreate(data.game_id, data.session_token, data.player_number, data.orientation);
       } else {
@@ -43,16 +44,12 @@ export default function LobbyModal({ onCreate, onJoin, onCancel, editingLocked =
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:8001/game/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ game_id: joinCode.trim() })
-      });
-      const data = await res.json();
-      if (res.ok && data.game_id && data.session_token && data.player_number && data.orientation) {
+      const res = await api.post('/game/join', { game_id: joinCode.trim() }).catch((err) => err?.response ?? null);
+      const data = res?.data;
+      if (res?.status < 400 && data?.game_id && data?.session_token && data?.player_number && data?.orientation) {
         onJoin(data.game_id, data.session_token, data.player_number, data.orientation);
       } else {
-        setError(data.error || 'Failed to join game.');
+        setError(data?.error || 'Failed to join game.');
       }
     } catch (e) {
       setError('Network error.');
