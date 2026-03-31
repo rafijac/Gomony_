@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 
 export function useMultiplayerSession() {
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<{ id: string } | null>(null);
   const joinSession = useCallback((sessionId: string) => {
     // TODO: Implement join session logic
     setSession({ id: sessionId });

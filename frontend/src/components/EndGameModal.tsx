@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import './EndGameModal.css';
 import ConfettiEffect from './ConfettiEffect';
 import useSoundEffect from './useSoundEffect';

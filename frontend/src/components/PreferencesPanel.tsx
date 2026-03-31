@@ -30,7 +30,6 @@ export default function PreferencesPanel({ open, onClose, userRole = 'player', e
   if (!open) return null;
 
   const isSpectator = userRole === 'spectator';
-  const isPlayer = userRole === 'player' || userRole === 'ai';
 
   return (
     <div className="modal-backdrop preferences-modal-backdrop">
