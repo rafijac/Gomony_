@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import './EndGameModal.css';
 import ConfettiEffect from './ConfettiEffect';
-// ...existing code...
+
 
 interface PlayerInfo {
   userId: string;
@@ -71,7 +71,7 @@ export default function EndGameModal({
     }
   }, []);
 
-  // ...existing code...
+
 
   return (
     <div className="modal-backdrop endgame-modal-backdrop">

@@ -27,7 +27,7 @@ function AppContent() {
   const [showModeModal, setShowModeModal] = useState(true);
   const [showLobby, setShowLobby] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
-  // ...existing code...
+
 
   useEffect(() => {
     setSessionToken(sessionToken || null);
@@ -95,7 +95,7 @@ function AppContent() {
             <span className="gomony-banner-title">GOMONY<sup className="gomony-copyright-sup">©</sup></span>
           </div>
         </div>
-        {/* ...existing code... */}
+
       </div>
       {showModeModal && <ModeSelectModal onSelect={handleSelect} showMultiplayer />}
       {showLobby && <LobbyModal onCreate={handleCreate} onJoin={handleJoin} onCancel={handleCancelLobby} />}
@@ -123,8 +123,8 @@ function AppContent() {
           onExit={handleEndModalClose}
         />
       )}
-      // ...existing code...
-      // ...existing code...
+
+
       <footer className="app-footer">
         <span className="app-footer-name">GOMONY</span>
         <span className="app-footer-sep">&bull;</span>

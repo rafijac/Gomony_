@@ -72,8 +72,8 @@ const BoardGrid: React.FC<BoardGridProps> = ({
   boardPx,
   children,
 }) => {
-  // Flip the board visually if needed
-  const displayBoard = isFlipped ? [...board].slice().reverse().map(row => [...row].reverse()) : board;
+  // Flip the board visually if needed (only reverse rows, not columns)
+  const displayBoard = isFlipped ? [...board].slice().reverse() : board;
   return (
     <div
       className="game-board"
@@ -83,6 +83,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({
     >
       {displayBoard.map((row: StackType[], yIdx: number) =>
         row.map((stack: StackType, x: number) => {
+          // Map y index to board coordinates
           const y = isFlipped ? 11 - yIdx : yIdx;
           // Only render stacks and allow interaction on dark squares
           if ((x + y) % 2 !== 1) {
