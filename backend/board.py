@@ -24,6 +24,11 @@ def make_initial_board() -> List[List[List[int]]]:
     return board
 
 
+def player_side_label(player_number: int) -> str:
+    """Human-readable side for rules copy (aligned with validate_move White/Brown wording)."""
+    return "White" if player_number == 1 else "Brown"
+
+
 def get_jumps_from(board: List[List[List[int]]], pos: Tuple[int, int]) -> List[Tuple[int, int]]:
     """
     Return a list of valid jump destinations from a given position.

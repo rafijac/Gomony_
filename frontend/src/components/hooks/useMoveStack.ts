@@ -63,11 +63,16 @@ export function useMoveStack(p: UseMoveStackParams) {
             end_pos: [to.y, to.x],
             player: p.playerNumber,
             session_token: p.sessionToken,
-          }).catch((err) => {
+          }).catch((err: { response?: { status?: number; data?: { error?: string } } }) => {
             const status = err?.response?.status;
+            const apiError = err?.response?.data?.error;
             if (status === 410 || status === 404) {
               p.setSessionExpired(true);
               p.setLastMessage('Session expired or not found.');
+            } else if (typeof apiError === 'string' && apiError) {
+              p.setLastMessage(`Invalid: ${apiError}`);
+            } else {
+              p.setLastMessage('Could not complete the move.');
             }
             return null;
           });

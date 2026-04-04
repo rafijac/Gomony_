@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body
 
 from fastapi.responses import JSONResponse
 from models import MoveRequest, AIMoveRequest
-from board import make_initial_board, get_jumps_from, get_all_jumps, apply_move
+from board import make_initial_board, get_jumps_from, get_all_jumps, apply_move, player_side_label
 import state as _s
 from shared.validate_move import validate_move
 from shared.ai import choose_ai_move, board_hash
@@ -85,14 +85,15 @@ async def move_endpoint(body: MoveRequest):
 
     is_jump = abs(er - sr) == 2
 
+    side = player_side_label(current_player)
     if pending:
         if [sr, sc] != pending:
-            return resp({"valid": False, "reason": "You must continue jumping with the highlighted piece.", "board": board, "current_player": current_player, "pending_jump": pending})
+            return resp({"valid": False, "reason": f"{side} must continue jumping with the highlighted piece.", "board": board, "current_player": current_player, "pending_jump": pending})
         if not is_jump:
-            return resp({"valid": False, "reason": "You must continue jumping.", "board": board, "current_player": current_player, "pending_jump": pending})
+            return resp({"valid": False, "reason": f"{side} must continue jumping.", "board": board, "current_player": current_player, "pending_jump": pending})
     else:
         if not is_jump and get_all_jumps(board, current_player):
-            return resp({"valid": False, "reason": "A jump is available — you must jump.", "board": board, "current_player": current_player, "pending_jump": None})
+            return resp({"valid": False, "reason": f"A jump is available — {side} must jump.", "board": board, "current_player": current_player, "pending_jump": None})
 
     valid, reason, kinged = validate_move(board, (sr, sc), (er, ec))
     if not valid:

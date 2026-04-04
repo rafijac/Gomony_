@@ -63,20 +63,14 @@ export default function GameBoard({ Tooltip }: { Tooltip?: React.ComponentType<a
     isThinking, aiMoveAnimating, canSelect, moveStack, setSelected, gameMode, animateAIMove
   );
 
-  // Always show the current player at the bottom
-  // Flip the board if:
-  // - Multiplayer: you are Player 1 (so your pieces are at the bottom)
-  // - Multiplayer: you are Player 2 and orientation is 'north' (so your pieces are at the bottom)
-  // - Single player: never flip (PC is always at top)
+  // Multiplayer perspective: server assigns orientation (game_session): P1 south, P2 north.
+  // Canonical board has P1 pieces at low y (rows 0–3) and P2 at high y (rows 8–11).
+  // Row-reverse (isFlipped) puts board y=0 at the screen bottom — correct for south (P1).
+  // North (P2) leaves row order canonical so brown stays at the screen bottom.
+  // PC: human at bottom rows in canonical layout; do not flip.
   let isFlipped = false;
-  if (gameMode === 'MP') {
-    if (playerNumber === 1) {
-      isFlipped = true;
-    } else if (playerNumber === 2 && orientation === 'north') {
-      isFlipped = true;
-    }
-  } else if (gameMode === 'PC') {
-    isFlipped = false;
+  if (gameMode === 'MP' && (playerNumber === 1 || playerNumber === 2)) {
+    isFlipped = orientation === 'south';
   }
   const isAIMoveDest = (x: number, y: number) =>
     aiMoveAnimating && !!aiMoveDest && aiMoveDest.x === x && aiMoveDest.y === y;

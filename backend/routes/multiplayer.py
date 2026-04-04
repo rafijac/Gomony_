@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from models import JoinGameRequest, SessionMoveRequest
-from board import get_jumps_from, get_all_jumps, apply_move
+from board import get_jumps_from, get_all_jumps, apply_move, player_side_label
 from end_state import get_end_state
 from game_session import GameSession, sessions
 from session_token_helpers import create_session_token, validate_session_token
@@ -107,13 +107,14 @@ async def game_move(game_id: str, body: SessionMoveRequest):
 
         is_jump = abs(er - sr) == 2
         pending = session.pending_jump
+        side = player_side_label(body.player)
         if pending:
             if [sr, sc] != pending:
-                return JSONResponse(status_code=400, content={"error": "You must continue jumping with the highlighted piece."})
+                return JSONResponse(status_code=400, content={"error": f"{side} must continue jumping with the highlighted piece."})
             if not is_jump:
-                return JSONResponse(status_code=400, content={"error": "You must continue jumping."})
+                return JSONResponse(status_code=400, content={"error": f"{side} must continue jumping."})
         elif not is_jump and get_all_jumps(board, body.player):
-            return JSONResponse(status_code=400, content={"error": "A jump is available — you must jump."})
+            return JSONResponse(status_code=400, content={"error": f"A jump is available — {side} must jump."})
 
         valid, reason, kinged = validate_move(board, (sr, sc), (er, ec))
         if not valid:
